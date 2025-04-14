@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAllReports } from "@/lib/reports-store"
+import { toast } from "sonner"
 
 export async function GET() {
   try {
@@ -7,7 +8,7 @@ export async function GET() {
 
     return NextResponse.json({ reports })
   } catch (error) {
-    console.error("Get reports API error:", error)
+    toast.error("Error fetching reports: " + error.message)
     return NextResponse.json({ message: error.message || "An error occurred while fetching reports" }, { status: 500 })
   }
 }

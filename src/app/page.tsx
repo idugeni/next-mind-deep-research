@@ -8,25 +8,27 @@ import SearchInput from "@/components/search-input"
 import SearchResults from "@/components/search-results"
 import ModelSelector from "@/components/model-selector"
 import { Loader2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
+
+interface SearchResult {
+  title: string
+  link: string
+  displayLink: string
+  snippet: string
+}
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState([])
-  const [selectedResults, setSelectedResults] = useState([])
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [selectedResults, setSelectedResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-pro-exp-03-25")
   const router = useRouter()
-  const { toast } = useToast()
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a search query",
-        variant: "destructive",
-      })
+      toast.error("Please enter a search query")
       return
     }
 
@@ -45,18 +47,16 @@ export default function Home() {
       setSearchResults(data.items || [])
       setSelectedResults([])
     } catch (error) {
-      console.error("Search error:", error)
-      toast({
-        title: "Search Failed",
-        description: error.message || "Failed to perform search. Please try again.",
-        variant: "destructive",
-      })
+      const errorMessage = error instanceof Error ? error.message : "Failed to perform search. Please try again.";
+      toast.error("Error", {
+        description: errorMessage
+      });
     } finally {
-      setIsSearching(false)
+      setIsSearching(false);
     }
   }
 
-  const handleResultSelect = (result, isSelected) => {
+  const handleResultSelect = (result: SearchResult, isSelected: boolean) => {
     if (isSelected) {
       setSelectedResults([...selectedResults, result])
     } else {
@@ -66,11 +66,7 @@ export default function Home() {
 
   const handleGenerateReport = async () => {
     if (selectedResults.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one search result",
-        variant: "destructive",
-      })
+      toast.error("Please select at least one search result")
       return
     }
 
@@ -97,14 +93,12 @@ export default function Home() {
       const data = await response.json()
       router.push(`/reports/${data.reportId}`)
     } catch (error) {
-      console.error("Report generation error:", error)
-      toast({
-        title: "Report Generation Failed",
-        description: error.message || "Failed to generate report. Please try again.",
-        variant: "destructive",
-      })
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate report. Please try again.";
+      toast.error("Error", {
+        description: errorMessage
+      });
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
   }
 

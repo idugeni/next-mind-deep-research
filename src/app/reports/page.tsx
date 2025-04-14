@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
+import type { Report } from "@/types/report"
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState([])
+  const [reports, setReports] = useState<Report[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const { toast } = useToast()
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -25,11 +25,8 @@ export default function ReportsPage() {
         const data = await response.json()
         setReports(data.reports)
       } catch (error) {
-        console.error("Error fetching reports:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load reports. Please try again.",
-          variant: "destructive",
+        toast.error("Error", {
+          description: "Failed to load reports. Please try again."
         })
       } finally {
         setIsLoading(false)
@@ -37,7 +34,7 @@ export default function ReportsPage() {
     }
 
     fetchReports()
-  }, [toast])
+  }, [])
 
   if (isLoading) {
     return (

@@ -6,19 +6,19 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, ArrowLeft, Download, FileText, FileImage } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
 import ReportViewer from "@/components/report-viewer"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { generateDocx } from "@/lib/docx-generator"
 import { generatePdf } from "@/lib/pdf-generator"
+import { Report, ReportDownloadParams, BlobDownloadParams } from "@/types/report"
+import { toast } from "sonner"
 
 export default function ReportPage() {
   const params = useParams()
   const reportId = params.id
-  const [report, setReport] = useState(null)
+  const [report, setReport] = useState<Report | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isGeneratingFile, setIsGeneratingFile] = useState(false)
-  const { toast } = useToast()
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -32,11 +32,8 @@ export default function ReportPage() {
         const data = await response.json()
         setReport(data.report)
       } catch (error) {
-        console.error("Error fetching report:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load report. Please try again.",
-          variant: "destructive",
+        toast.error("Error", {
+          description: "Failed to load report. Please try again."
         })
       } finally {
         setIsLoading(false)
@@ -52,7 +49,7 @@ export default function ReportPage() {
     if (!report) return
 
     const reportText = generateMarkdownReport(report)
-    downloadFile(reportText, `${getReportFilename(report)}.md`, "text/markdown")
+    downloadFile({ content: reportText, filename: `${getReportFilename(report)}.md`, contentType: "text/markdown" })
   }
 
   const handleDownloadWord = async () => {
@@ -61,13 +58,10 @@ export default function ReportPage() {
 
     try {
       const docxBlob = await generateDocx(report)
-      downloadBlob(docxBlob, `${getReportFilename(report)}.docx`)
+      downloadBlob({ blob: docxBlob, filename: `${getReportFilename(report)}.docx` })
     } catch (error) {
-      console.error("Error generating Word document:", error)
-      toast({
-        title: "Error",
-        description: "Failed to generate Word document. Please try again.",
-        variant: "destructive",
+      toast.error("Error", {
+        description: "Failed to generate Word document. Please try again."
       })
     } finally {
       setIsGeneratingFile(false)
@@ -80,25 +74,22 @@ export default function ReportPage() {
 
     try {
       const pdfBlob = await generatePdf(report)
-      downloadBlob(pdfBlob, `${getReportFilename(report)}.pdf`)
+      downloadBlob({ blob: pdfBlob, filename: `${getReportFilename(report)}.pdf` })
     } catch (error) {
-      console.error("Error generating PDF:", error)
-      toast({
-        title: "Error",
-        description: "Failed to generate PDF. Please try again.",
-        variant: "destructive",
+      toast.error("Error", {
+        description: "Failed to generate PDF. Please try again."
       })
     } finally {
       setIsGeneratingFile(false)
     }
   }
 
-  const downloadFile = (content, filename, contentType) => {
+  const downloadFile = ({ content, filename, contentType }: ReportDownloadParams): void => {
     const blob = new Blob([content], { type: contentType })
-    downloadBlob(blob, filename)
+    downloadBlob({ blob, filename })
   }
 
-  const downloadBlob = (blob, filename) => {
+  const downloadBlob = ({ blob, filename }: BlobDownloadParams): void => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
@@ -109,7 +100,7 @@ export default function ReportPage() {
     URL.revokeObjectURL(url)
   }
 
-  const getReportFilename = (report) => {
+  const getReportFilename = (report: Report): string => {
     return report.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()
   }
 
@@ -136,7 +127,7 @@ export default function ReportPage() {
           <CardContent className="py-16 text-center">
             <h1 className="text-2xl font-bold mb-4">Report Not Found</h1>
             <p className="text-muted-foreground mb-8">
-              The report you're looking for doesn't exist or has been removed.
+              The report you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
             <Link href="/">
               <Button>Start New Research</Button>
@@ -153,7 +144,7 @@ export default function ReportPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+      <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full">
         <Link href="/reports">
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -199,7 +190,7 @@ export default function ReportPage() {
   )
 }
 
-function generateMarkdownReport(report) {
+function generateMarkdownReport(report: Report): string {
   const language = report.language || "en"
 
   const labels = {
@@ -240,8 +231,8 @@ function generateMarkdownReport(report) {
   }
 
   markdown += `## ${labels.references}\n\n`
-  report.references.forEach((reference, index) => {
-    markdown += `${index + 1}. ${reference}\n`
+  report.references.forEach((reference: string) => {
+    markdown += `${reference}\n`
   })
 
   return markdown
