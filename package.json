@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack --experimental-https",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -71,5 +72,6 @@
     "tailwindcss": "^4.1.3",
     "turbo": "^2.5.0",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "npm@11.3.0"
 }
