@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json()
-    const { query, selectedResults, model } = body
+    const { query, selectedResults, model, language } = body
 
     if (!query || !selectedResults || !Array.isArray(selectedResults) || selectedResults.length === 0) {
       return NextResponse.json({ message: "Invalid request data" }, { status: 400 })
@@ -72,10 +72,15 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         console.error(`Error processing content from ${result.link}:`, error)
+        const fetchError = error as Error
         // Return the result with search snippet as fallback
         return {
           ...result,
-          content: `[Content unavailable: ${error.message}]\n\nSearch Result Snippet: ${result.snippet || "No snippet available"}\n\nTitle: ${result.title || "No title available"}`,
+          content: `[Content unavailable: ${fetchError.message}]
+
+Search Result Snippet: ${result.snippet || "No snippet available"}
+
+Title: ${result.title || "No title available"}`,
         }
       }
     })
@@ -83,7 +88,7 @@ export async function POST(request: NextRequest) {
     const resultsWithContent = await Promise.all(contentPromises)
 
     // Generate report using Gemini
-    const report = await generateReportWithGemini(query, resultsWithContent, model || "gemini-2.5-pro-exp-03-25")
+    const report = await generateReportWithGemini(query, resultsWithContent, model || "gemini-2.5-pro-exp-03-25", language)
 
     // Save the report
     const savedReport = await saveReport(report)
@@ -101,10 +106,11 @@ export async function POST(request: NextRequest) {
         },
       },
     )
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Report generation API error:", error)
+    const errorMessage = error instanceof Error ? error.message : "An error occurred during report generation"
     return NextResponse.json(
-      { message: error.message || "An error occurred during report generation" },
+      { message: errorMessage },
       { status: 500 },
     )
   }

@@ -4,12 +4,13 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
-import Navbar from "@/components/navbar"
+import Navbar from "@/components/layout/navbar"
+import Footer from "@/components/layout/footer"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "NextMind - Deep Research Tool",
+  title: "NextMind - Deep Research",
   description: "Generate comprehensive research reports using AI",
     generator: 'v0.dev'
 }
@@ -25,12 +26,10 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Navbar />
           <main className="min-h-screen pt-16 pb-16">{children}</main>
+          <Footer />
           <Toaster />
         </ThemeProvider>
       </body>
     </html>
   )
 }
-
-
-import './globals.css'

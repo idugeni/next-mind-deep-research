@@ -1,4 +1,4 @@
-export async function searchGoogle(query: string) {
+export async function searchGoogle(query: string, language?: "id" | "en") {
   const apiKey = process.env.GOOGLE_SEARCH_API_KEY
   const cx = process.env.GOOGLE_SEARCH_CX
 
@@ -6,7 +6,8 @@ export async function searchGoogle(query: string) {
     throw new Error("Google Search API credentials are not configured")
   }
 
-  const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}`
+  const languageParam = language ? `&lr=lang_${language}` : ""
+  const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}${languageParam}`
 
   try {
     const response = await fetch(url)

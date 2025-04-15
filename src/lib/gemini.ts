@@ -27,6 +27,7 @@ export async function generateReportWithGemini(
   query: string,
   sources: SourceWithContent[],
   model: string,
+  language?: string
 ): Promise<Report> {
   const apiKey = process.env.GEMINI_API_KEY
 
@@ -34,8 +35,11 @@ export async function generateReportWithGemini(
     throw new Error("Gemini API key is not configured")
   }
 
-  // Detect language (simple detection - can be enhanced)
-  const language = detectLanguage(query)
+  // Use provided language or detect from query
+  const reportLanguage = language || detectLanguage(query)
+
+  // Ensure language is always a string
+  const finalLanguage: string = reportLanguage
 
   // Prepare the sources content
   const sourcesContent = sources
@@ -204,7 +208,7 @@ ${promptFinal}
       references: reportData.references,
       createdAt: new Date().toISOString(),
       model,
-      language,
+      language: finalLanguage,
     }
 
     return report

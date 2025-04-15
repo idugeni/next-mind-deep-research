@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     // Get the search query from the URL
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get("q")
+    const language = searchParams.get("language") as "id" | "en" | undefined
 
     if (!query) {
       return NextResponse.json({ message: "Search query is required" }, { status: 400 })
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Perform the search
-    const searchResults = await searchGoogle(query)
+    const searchResults = await searchGoogle(query, language)
 
     return NextResponse.json(searchResults, {
       headers: {
@@ -45,8 +46,9 @@ export async function GET(request: NextRequest) {
         "X-RateLimit-Reset": reset.toString(),
       },
     })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Search API error:", error)
-    return NextResponse.json({ message: error.message || "An error occurred during search" }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : "An error occurred during search"
+    return NextResponse.json({ message: errorMessage }, { status: 500 })
   }
 }

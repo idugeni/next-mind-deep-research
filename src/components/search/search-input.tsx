@@ -24,8 +24,8 @@ export default function SearchInput({ onSearch, isLoading = false }: SearchInput
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="flex w-full max-w-4xl mx-auto items-center space-x-2">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row w-full max-w-4xl mx-auto items-center space-y-2 sm:space-y-0 sm:space-x-2">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
@@ -36,7 +36,7 @@ export default function SearchInput({ onSearch, isLoading = false }: SearchInput
             disabled={isLoading}
           />
         </div>
-        <Button type="submit" disabled={!query.trim() || isLoading}>
+        <Button type="submit" disabled={!query.trim() || isLoading} className="w-full sm:w-auto">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
