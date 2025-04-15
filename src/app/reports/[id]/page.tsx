@@ -144,9 +144,9 @@ export default function ReportPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
-      <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full">
+      <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full bg-card p-4 rounded-lg shadow-sm">
         <Link href="/reports">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="hover:bg-primary hover:text-secondary-foreground transition-colors">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {backToReportsText}
           </Button>
@@ -154,7 +154,7 @@ export default function ReportPage() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" disabled={isGeneratingFile}>
+            <Button size="sm" disabled={isGeneratingFile} className="hover:bg-primary hover:text-primary-foreground transition-colors">
               {isGeneratingFile ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -168,16 +168,16 @@ export default function ReportPage() {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleDownloadMarkdown}>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={handleDownloadMarkdown} className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
               <FileText className="mr-2 h-4 w-4" />
               Markdown (.md)
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDownloadWord}>
+            <DropdownMenuItem onClick={handleDownloadWord} className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
               <FileText className="mr-2 h-4 w-4" />
               Word (.docx)
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDownloadPdf}>
+            <DropdownMenuItem onClick={handleDownloadPdf} className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
               <FileImage className="mr-2 h-4 w-4" />
               PDF (.pdf)
             </DropdownMenuItem>

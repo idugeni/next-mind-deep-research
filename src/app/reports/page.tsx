@@ -4,14 +4,16 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Loader2, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import type { Report } from "@/types/report"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [deletingReports, setDeletingReports] = useState<Map<string, boolean>>(new Map())
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -66,22 +68,71 @@ export default function ReportsPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {reports.map((report) => (
-            <Card key={report.id} className="flex flex-col">
+            <Card key={report.id} className="flex flex-col hover:shadow-lg transition-all duration-300">
               <CardHeader>
-                <CardTitle className="line-clamp-2">{report.title}</CardTitle>
-                <CardDescription>
+                <CardTitle className="line-clamp-2 text-xl">{report.title}</CardTitle>
+                <CardDescription className="text-sm opacity-75">
                   {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground line-clamp-3">{report.summary}</p>
+                <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">{report.summary}</p>
               </CardContent>
-              <CardFooter className="mt-auto">
-                <Link href={`/reports/${report.id}`} className="w-full">
-                  <Button variant="outline" className="w-full">
+              <CardFooter className="mt-auto pt-4 flex flex-row justify-between gap-2">
+                <Link href={`/reports/${report.id}`} className="flex-1">
+                  <Button variant="outline" className="w-full hover:bg-primary hover:text-secondary-foreground transition-colors">
                     View Report
                   </Button>
                 </Link>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-10 h-10 p-0" disabled={deletingReports.get(report.id)}>
+                      {deletingReports.get(report.id) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Hapus Report</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Apakah Anda yakin ingin menghapus report ini? Tindakan ini tidak dapat dibatalkan.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={async () => {
+                          try {
+                            setDeletingReports(new Map(deletingReports.set(report.id, true)))
+                            const response = await fetch(`/api/reports/${report.id}`, {
+                              method: 'DELETE',
+                            })
+
+                            if (!response.ok) {
+                              throw new Error('Gagal menghapus report')
+                            }
+
+                            setReports((prevReports) =>
+                              prevReports.filter((r) => r.id !== report.id)
+                            )
+                            toast.success('Report berhasil dihapus')
+                          } catch (error) {
+                            toast.error('Error', {
+                              description: 'Gagal menghapus report. Silakan coba lagi.',
+                            })
+                          } finally {
+                            setDeletingReports(new Map(deletingReports.delete(report.id) ? deletingReports : deletingReports))
+                          }
+                        }}
+                      >
+                        Hapus
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardFooter>
             </Card>
           ))}
