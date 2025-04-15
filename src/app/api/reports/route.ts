@@ -8,7 +8,16 @@ export async function GET() {
 
     return NextResponse.json({ reports })
   } catch (error) {
-    toast.error("Error fetching reports: " + error.message)
-    return NextResponse.json({ message: error.message || "An error occurred while fetching reports" }, { status: 500 })
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+        ? error
+        : "Unknown error";
+    toast.error("Error fetching reports: " + message);
+    return NextResponse.json(
+      { message: message || "An error occurred while fetching reports" },
+      { status: 500 }
+    );
   }
 }

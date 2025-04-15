@@ -26,7 +26,7 @@ export default function ReportsPage() {
 
         const data = await response.json()
         setReports(data.reports)
-      } catch (error) {
+      } catch {
         toast.error("Error", {
           description: "Failed to load reports. Please try again."
         })
@@ -119,7 +119,7 @@ export default function ReportsPage() {
                               prevReports.filter((r) => r.id !== report.id)
                             )
                             toast.success('Report berhasil dihapus')
-                          } catch (error) {
+                          } catch {
                             toast.error('Error', {
                               description: 'Gagal menghapus report. Silakan coba lagi.',
                             })

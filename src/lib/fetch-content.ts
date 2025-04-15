@@ -1,5 +1,5 @@
 import { load } from "cheerio";
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import UserAgent from "user-agents";
@@ -23,7 +23,7 @@ interface FetchOptions {
   language?: "id" | "en";
 }
 
-async function fetchWithRetry(url: string, options: FetchOptions = {}, retryCount = 0): Promise<any> {
+async function fetchWithRetry(url: string, options: FetchOptions = {}, retryCount = 0): Promise<string> {
   try {
     const userAgent = new UserAgent().toString();
     const defaultHeaders = {
@@ -58,7 +58,27 @@ async function fetchWithRetry(url: string, options: FetchOptions = {}, retryCoun
       decompress: true,
     });
 
-    return response;
+    if (response && typeof response === 'object' && 'data' in response) {
+      // AxiosResponse
+      return response.data;
+    } else {
+      // Fetch Response or error string
+      if (typeof response === 'object' && response !== null && 'ok' in response && 'headers' in response) {
+        const res = response as Response;
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          return await res.json();
+        } else {
+          return await res.text();
+        }
+      } else {
+        // response is likely a string (error message)
+        return typeof response === 'string' ? response : `[Content unavailable from ${url}: Unknown response type]`;
+      }
+    }
   } catch (error) {
     if (error instanceof AxiosError) {
       console.error(`Fetch error for ${url}:`, error.message);
@@ -78,65 +98,80 @@ export async function fetchUrlContent(url: string, options: FetchOptions = {}): 
   try {
     const response = await fetchWithRetry(url, options);
 
-    // Handle different HTTP status codes
-    if (response.status !== 200) {
-      if (response.status === 403) {
-        return `[Access Forbidden: The website at ${url} has restricted access to its content. Using available metadata only.]`;
+    if (response && typeof response === 'object' && 'data' in response) {
+      // AxiosResponse
+      const axiosResponse = response as AxiosResponse;
+      if (axiosResponse.status !== 200) {
+        if (axiosResponse.status === 403) {
+          return `[Access Forbidden: The website at ${url} has restricted access to its content. Using available metadata only.]`;
+        } else {
+          return `[Content unavailable from ${url}: HTTP status ${axiosResponse.status} ${axiosResponse.statusText}]`;
+        }
+      }
+
+      // Check content type to ensure we're dealing with HTML
+      const contentType = axiosResponse.headers["content-type"] || "";
+      if (!contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
+        return `[Content from ${url} is not HTML (${contentType}). Using available metadata only.]`;
+      }
+
+      const html = axiosResponse.data;
+
+      // Use cheerio to parse the HTML and extract the main content
+      const $ = load(html);
+
+      // Remove script and style elements
+      $("script, style, iframe, nav, footer, header, aside").remove();
+
+      // Extract the title
+      const title = $("title").text().trim() || "Untitled Page";
+
+      // Extract meta description
+      const metaDescription =
+        $('meta[name="description"]').attr("content") || $('meta[property="og:description"]').attr("content") || "";
+
+      // Extract the main content
+      let mainContent = $("main").text() || $("article").text() || $("#content").text() || $(".content").text();
+
+      // If no main content container is found, use the body
+      if (!mainContent || mainContent.trim().length < 100) {
+        const paragraphs = $("p")
+          .map((_, el) => $(el).text().trim())
+          .get();
+        mainContent = paragraphs.join("\n\n");
+      }
+
+      // If still no substantial content, try to get text from all visible elements
+      if (!mainContent || mainContent.trim().length < 100) {
+        mainContent = $("body").text().trim();
+      }
+
+      // Combine title, meta description, and content
+      let extractedContent = `Title: ${title}\n\n`;
+      if (metaDescription) {
+        extractedContent += `Description: ${metaDescription}\n\n`;
+      }
+      extractedContent += `Content:\n${mainContent}`;
+      return extractedContent.slice(0, 10000);
+    } else {
+      // Fetch Response or error string
+      if (typeof response === 'object' && response !== null && 'ok' in response && 'headers' in response) {
+        const res = response as Response;
+        if (!res.ok) {
+          return `[Content unavailable from ${url}: HTTP error! status: ${res.status}]`;
+        }
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const json = await res.json();
+          return typeof json === 'string' ? json : JSON.stringify(json);
+        } else {
+          return await res.text();
+        }
       } else {
-        return `[Content unavailable from ${url}: HTTP status ${response.status} ${response.statusText}]`;
+        // response is likely a string (error message)
+        return typeof response === 'string' ? response : `[Content unavailable from ${url}: Unknown response type]`;
       }
     }
-
-    // Check content type to ensure we're dealing with HTML
-    const contentType = response.headers["content-type"] || "";
-    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
-      return `[Content from ${url} is not HTML (${contentType}). Using available metadata only.]`;
-    }
-
-    const html = response.data;
-
-    // Use cheerio to parse the HTML and extract the main content
-    const $ = load(html);
-
-    // Remove script and style elements
-    $("script, style, iframe, nav, footer, header, aside").remove();
-
-    // Extract the title
-    const title = $("title").text().trim() || "Untitled Page";
-
-    // Extract meta description
-    const metaDescription =
-      $('meta[name="description"]').attr("content") || $('meta[property="og:description"]').attr("content") || "";
-
-    // Extract the main content
-    // Try to find the main content container
-    let mainContent = $("main").text() || $("article").text() || $("#content").text() || $(".content").text();
-
-    // If no main content container is found, use the body
-    if (!mainContent || mainContent.trim().length < 100) {
-      // Get all paragraphs
-      const paragraphs = $("p")
-        .map((_, el) => $(el).text().trim())
-        .get();
-      mainContent = paragraphs.join("\n\n");
-    }
-
-    // If still no substantial content, try to get text from all visible elements
-    if (!mainContent || mainContent.trim().length < 100) {
-      mainContent = $("body").text().trim();
-    }
-
-    // Combine title, meta description, and content
-    let extractedContent = `Title: ${title}\n\n`;
-
-    if (metaDescription) {
-      extractedContent += `Description: ${metaDescription}\n\n`;
-    }
-
-    extractedContent += `Content:\n${mainContent}`;
-
-    // Limit the content length to avoid overwhelming the LLM
-    return extractedContent.slice(0, 10000);
   } catch (error) {
     console.error(`Error fetching content from ${url}:`, error);
     return `[Content unavailable from ${url}: ${error instanceof Error ? error.message : 'Unknown error'}]`;

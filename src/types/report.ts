@@ -1,20 +1,22 @@
-export interface Report {
-  id: string
-  title: string
-  query: string
-  summary: string
-  introduction: string
-  methodology?: string
-  findings?: string
-  analysis: string
-  discussion?: string
-  conclusion: string
-  recommendations?: string
-  references: string[]
-  language?: string
-  createdAt: string
-  model: string
-}
+export type Report = {
+  id: string;
+  title: string;
+  query: string;
+  summary: string;
+  introduction: string;
+  methodology?: string;
+  findings?: string;
+  analysis: string;
+  discussion?: string;
+  conclusion: string;
+  recommendations?: string;
+  references: string[];
+  language?: string;
+  createdAt: string;
+  model: string;
+  description?: string;
+  content?: string;
+};
 
 export interface ReportDownloadParams {
   content: string

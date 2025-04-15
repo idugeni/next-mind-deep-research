@@ -31,7 +31,7 @@ export default function ReportPage() {
 
         const data = await response.json()
         setReport(data.report)
-      } catch (error) {
+      } catch {
         toast.error("Error", {
           description: "Failed to load report. Please try again."
         })
@@ -43,7 +43,7 @@ export default function ReportPage() {
     if (reportId) {
       fetchReport()
     }
-  }, [reportId, toast])
+  }, [reportId])
 
   const handleDownloadMarkdown = () => {
     if (!report) return
@@ -59,7 +59,7 @@ export default function ReportPage() {
     try {
       const docxBlob = await generateDocx(report)
       downloadBlob({ blob: docxBlob, filename: `${getReportFilename(report)}.docx` })
-    } catch (error) {
+    } catch {
       toast.error("Error", {
         description: "Failed to generate Word document. Please try again."
       })
@@ -75,7 +75,7 @@ export default function ReportPage() {
     try {
       const pdfBlob = await generatePdf(report)
       downloadBlob({ blob: pdfBlob, filename: `${getReportFilename(report)}.pdf` })
-    } catch (error) {
+    } catch {
       toast.error("Error", {
         description: "Failed to generate PDF. Please try again."
       })
@@ -101,7 +101,7 @@ export default function ReportPage() {
   }
 
   const getReportFilename = (report: Report): string => {
-    return report.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()
+    return (report.title ?? "untitled").replace(/[^a-z0-9]/gi, "_").toLowerCase()
   }
 
   if (isLoading) {

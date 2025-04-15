@@ -20,6 +20,7 @@ interface SearchSectionProps {
 export default function SearchSection({ onSearchComplete }: SearchSectionProps) {
   const [isSearching, setIsSearching] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<SearchLanguage>("id")
+  const [hasResult, setHasResult] = useState(false)
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
@@ -30,7 +31,7 @@ export default function SearchSection({ onSearchComplete }: SearchSectionProps) 
     setIsSearching(true)
 
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&lr=lang_${selectedLanguage}`)
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&language=${selectedLanguage}`)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -39,6 +40,7 @@ export default function SearchSection({ onSearchComplete }: SearchSectionProps) 
 
       const data = await response.json()
       onSearchComplete(data.items || [], query)
+      setHasResult(!!(data.items && data.items.length > 0))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to perform search. Please try again."
       toast.error("Error", {
@@ -49,6 +51,11 @@ export default function SearchSection({ onSearchComplete }: SearchSectionProps) 
     }
   }
 
+  const handleReset = () => {
+    onSearchComplete([], "")
+    setHasResult(false)
+  }
+
   return (
     <Card className="mb-4">
       <CardContent>
@@ -56,7 +63,7 @@ export default function SearchSection({ onSearchComplete }: SearchSectionProps) 
           selectedLanguage={selectedLanguage}
           onLanguageChange={setSelectedLanguage}
         />
-        <SearchInput onSearch={handleSearch} isLoading={isSearching} />
+        <SearchInput onSearch={handleSearch} isLoading={isSearching} showReset={hasResult} onReset={handleReset} />
       </CardContent>
     </Card>
   )

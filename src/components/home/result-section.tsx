@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import SearchResults from "@/components/search/search-results"
 import ModelSelector from "@/components/model-selector"
 
 interface SearchResult {
@@ -15,7 +14,6 @@ interface SearchResult {
 interface ResultSectionProps {
   searchResults: SearchResult[]
   selectedResults: SearchResult[]
-  onResultSelect: (result: SearchResult, isSelected: boolean) => void
   onGenerateReport: () => void
   isGenerating: boolean
   selectedModel: string
@@ -25,7 +23,6 @@ interface ResultSectionProps {
 export default function ResultSection({
   searchResults,
   selectedResults,
-  onResultSelect,
   onGenerateReport,
   isGenerating,
   selectedModel,
@@ -56,11 +53,12 @@ export default function ResultSection({
         </div>
       </div>
 
-      <SearchResults
+      {/* Hapus komponen SearchResults di sini untuk menghindari duplikasi UI filter/list hasil */}
+      {/* <SearchResults
         results={searchResults}
         onResultSelect={onResultSelect}
         selectedResults={selectedResults}
-      />
+      /> */}
     </>
   )
 }

@@ -1,17 +1,5 @@
 import redis from "./redis"
-
-interface Report {
-  id: string
-  title: string
-  query: string
-  summary: string
-  introduction: string
-  analysis: string
-  conclusion: string
-  references: string[]
-  createdAt: string
-  model: string
-}
+import { Report } from "../types/report";
 
 // Key for storing the list of report IDs
 const REPORTS_LIST_KEY = "nextmind:reports:list"
@@ -21,6 +9,23 @@ const REPORT_PREFIX = "nextmind:report:"
 
 // Maximum number of reports to keep
 const MAX_REPORTS = 50
+
+function isValidReport(obj: unknown): obj is Report {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof (obj as Record<string, unknown>).id === "string" &&
+    typeof (obj as Record<string, unknown>).title === "string" &&
+    typeof (obj as Record<string, unknown>).query === "string" &&
+    typeof (obj as Record<string, unknown>).summary === "string" &&
+    typeof (obj as Record<string, unknown>).introduction === "string" &&
+    typeof (obj as Record<string, unknown>).analysis === "string" &&
+    typeof (obj as Record<string, unknown>).conclusion === "string" &&
+    Array.isArray((obj as Record<string, unknown>).references) &&
+    typeof (obj as Record<string, unknown>).createdAt === "string" &&
+    typeof (obj as Record<string, unknown>).model === "string"
+  );
+}
 
 export async function saveReport(report: Report): Promise<Report> {
   try {
@@ -51,18 +56,20 @@ export async function getReportById(id: string): Promise<Report | null> {
       return null
     }
 
-    // Handle the case where reportData might be an object or a string
-    if (typeof reportData === "object") {
-      return reportData as Report
+    let parsed: unknown;
+    if (typeof reportData === "string") {
+      parsed = JSON.parse(reportData);
+    } else if (typeof reportData === "object" && reportData !== null) {
+      parsed = reportData;
+    } else {
+      throw new Error("Invalid report data type");
     }
 
-    try {
-      // Safely parse the JSON string
-      return JSON.parse(reportData)
-    } catch (parseError) {
-      console.error(`Error parsing report data for ${id}:`, parseError)
-      throw new Error(`Invalid report data format: ${parseError.message}`)
+    if (!isValidReport(parsed)) {
+      throw new Error("Report data does not conform to the Report type");
     }
+
+    return parsed;
   } catch (error) {
     console.error(`Error getting report ${id}:`, error)
     throw error

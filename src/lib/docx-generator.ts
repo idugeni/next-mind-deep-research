@@ -1,6 +1,7 @@
 import { Document, Packer, Paragraph, HeadingLevel } from "docx"
+import { Report } from "../types/report";
 
-export async function generateDocx(report) {
+export async function generateDocx(report: Report) {
   const language = report.language || "en"
 
   const labels = {
@@ -114,7 +115,7 @@ export async function generateDocx(report) {
     }),
   )
 
-  report.references.forEach((reference, index) => {
+  report.references?.forEach((reference: string, index: number) => {
     sections.push(
       new Paragraph({
         text: `${index + 1}. ${reference}`,
