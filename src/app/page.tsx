@@ -23,7 +23,7 @@ export default function Home() {
   } = useHome()
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
       <HeroSection />
       <SearchSection onSearchComplete={handleSearchComplete} />
       {searchResults.length === 0 && <FeaturesSection />}

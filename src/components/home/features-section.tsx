@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 export default function FeaturesSection() {
   return (
     <div className="py-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
         <Card className="transition-all duration-300 hover:shadow-lg hover:bg-accent/50">
           <CardContent className="p-6 space-y-2 flex flex-col items-center">
             <div className="p-3 rounded-full bg-primary/10 transition-all duration-300">

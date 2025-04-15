@@ -4,14 +4,8 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import SearchInput from "@/components/search/search-input"
 import LanguageSelector, { SearchLanguage } from "@/components/search/language-selector"
+import { SearchResult } from "@/types/search"
 import { toast } from "sonner"
-
-interface SearchResult {
-  title: string
-  link: string
-  displayLink: string
-  snippet: string
-}
 
 interface SearchSectionProps {
   onSearchComplete: (results: SearchResult[], query: string) => void

@@ -5,25 +5,9 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { SearchResult } from "@/types/search"
 import { SearchLanguage } from "@/components/search/language-selector"
-
-function detectResultType(result: SearchResult): SearchResult["type"] {
-  const url = result.link.toLowerCase();
-  if (url.endsWith('.pdf')) return 'pdf';
-  if (url.endsWith('.doc') || url.endsWith('.docx')) return 'word';
-  if (url.endsWith('.xls') || url.endsWith('.xlsx')) return 'spreadsheet';
-  if (url.endsWith('.ppt') || url.endsWith('.pptx')) return 'presentation';
-  if (url.match(/\.(jpg|jpeg|png|gif|bmp|svg)(\?|$)/)) return 'image';
-  if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com')) return 'video';
-  if (url.includes('news.google.com') || url.includes('cnn.com') || url.includes('bbc.co') || url.includes('detik.com') || url.includes('kompas.com')) return 'news';
-  if (url.includes('maps.google.com') || url.includes('goo.gl/maps')) return 'map';
-  if (url.includes('twitter.com') || url.includes('facebook.com') || url.includes('linkedin.com') || url.includes('instagram.com')) return 'social';
-  if (url.startsWith('http')) return 'web';
-  return 'other';
-}
-
-function categorizeResults(results: SearchResult[]): SearchResult[] {
-  return results.map(r => ({ ...r, type: detectResultType(r) }));
-}
+import { categorizeResults } from "@/lib/search-utils"
+import { useSelection } from "@/hooks/use-selection"
+import { DEFAULT_MODEL_ID } from "@/constants/models"
 
 type UseHomeReturn = {
   searchResults: SearchResult[]
@@ -44,36 +28,24 @@ type UseHomeReturn = {
 export function useHome(): UseHomeReturn {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const [selectedResults, setSelectedResults] = useState<SearchResult[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
-  const [selectedModel, setSelectedModel] = useState("gemini-2.5-pro-exp-03-25")
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL_ID)
   const [selectedLanguage, setSelectedLanguage] = useState<SearchLanguage>("id")
   const router = useRouter()
+
+  // Gunakan custom hook untuk seleksi hasil
+  const {
+    selectedResults,
+    setSelectedResults,
+    handleResultSelect,
+    handleBatchSelect
+  } = useSelection([])
 
   const handleSearchComplete = (results: SearchResult[], query: string) => {
     const categorized = categorizeResults(results)
     setSearchResults(categorized)
     setSelectedResults([])
     setSearchQuery(query)
-  }
-
-  const handleResultSelect = (result: SearchResult, isSelected: boolean) => {
-    if (isSelected) {
-      setSelectedResults([...selectedResults, result])
-    } else {
-      setSelectedResults(selectedResults.filter((item) => item.link !== result.link))
-    }
-  }
-
-  const handleBatchSelect = (results: SearchResult[], isSelected: boolean) => {
-    setSelectedResults(prev => {
-      if (isSelected) {
-        const newResults = results.filter(r => !prev.some(s => s.link === r.link))
-        return [...prev, ...newResults]
-      } else {
-        return prev.filter(s => !results.some(r => r.link === s.link))
-      }
-    })
   }
 
   const handleGenerateReport = async () => {
@@ -95,9 +67,9 @@ export function useHome(): UseHomeReturn {
         },
         body: JSON.stringify({
           query: searchQuery,
-          results: selectedResults,
+          selectedResults,
           model: selectedModel,
-          language: selectedLanguage
+          language: selectedLanguage,
         }),
       })
       if (response.status === 429) {

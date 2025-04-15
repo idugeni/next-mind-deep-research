@@ -3,13 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import ModelSelector from "@/components/model-selector"
-
-interface SearchResult {
-  title: string
-  link: string
-  displayLink: string
-  snippet: string
-}
+import { SearchResult } from "@/types/search"
 
 interface ResultSectionProps {
   searchResults: SearchResult[]

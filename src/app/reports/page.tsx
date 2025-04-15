@@ -2,13 +2,22 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card, CardContent, CardDescription,
+  CardFooter, CardHeader, CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Loader2, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import type { Report } from "@/types/report"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { fetchWithTimeout } from "@/lib/utils"
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
@@ -18,75 +27,90 @@ export default function ReportsPage() {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const response = await fetch("/api/reports")
-
+        const response = await fetchWithTimeout("/api/reports", {}, 15000)
         if (!response.ok) {
           throw new Error("Failed to fetch reports")
         }
-
         const data = await response.json()
         setReports(data.reports)
-      } catch {
-        toast.error("Error", {
-          description: "Failed to load reports. Please try again."
-        })
+      } catch (error: any) {
+        if (error.name === "AbortError") {
+          toast.error("Timeout", { description: "Permintaan terlalu lama, silakan coba lagi." })
+        } else {
+          toast.error("Error", { description: error?.message || "Gagal mengambil data reports." })
+        }
       } finally {
         setIsLoading(false)
       }
     }
-
     fetchReports()
   }, [])
 
   if (isLoading) {
     return (
       <div className="container mx-auto py-16 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Your Research Reports</h1>
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
+      <div className="flex flex-col md:flex-row items-center justify-center md:justify-between text-center md:text-left gap-4 mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Your Research Reports</h1>
         <Link href="/">
-          <Button>New Research</Button>
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+            New Research
+          </Button>
         </Link>
       </div>
 
       {reports.length === 0 ? (
         <div className="text-center py-16">
-          <h2 className="text-xl font-medium mb-4">No reports yet</h2>
-          <p className="text-muted-foreground mb-8">
+          <h2 className="text-xl font-semibold text-foreground mb-4">No reports yet</h2>
+          <p className="text-muted-foreground mb-8 max-w-md mx-auto">
             Start by searching for a topic and generating your first research report.
           </p>
           <Link href="/">
-            <Button>Start Researching</Button>
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              Start Researching
+            </Button>
           </Link>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {reports.map((report) => (
-            <Card key={report.id} className="flex flex-col hover:shadow-lg transition-all duration-300">
+            <Card
+              key={report.id}
+              className="flex flex-col bg-card border border-border hover:shadow-md transition-shadow duration-300"
+            >
               <CardHeader>
-                <CardTitle className="line-clamp-2 text-xl">{report.title}</CardTitle>
-                <CardDescription className="text-sm opacity-75">
+                <CardTitle className="line-clamp-2 text-xl text-foreground">{report.title}</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
                   {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">{report.summary}</p>
+                <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                  {report.summary}
+                </p>
               </CardContent>
               <CardFooter className="mt-auto pt-4 flex flex-row justify-between gap-2">
                 <Link href={`/reports/${report.id}`} className="flex-1">
-                  <Button variant="outline" className="w-full hover:bg-primary hover:text-secondary-foreground transition-colors">
+                  <Button
+                    variant="outline"
+                    className="w-full text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
                     View Report
                   </Button>
                 </Link>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-10 h-10 p-0" disabled={deletingReports.get(report.id)}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={deletingReports.get(report.id)}
+                    >
                       {deletingReports.get(report.id) ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
@@ -107,21 +131,15 @@ export default function ReportsPage() {
                         onClick={async () => {
                           try {
                             setDeletingReports(new Map(deletingReports.set(report.id, true)))
-                            const response = await fetch(`/api/reports/${report.id}`, {
-                              method: 'DELETE',
-                            })
+                            const response = await fetch(`/api/reports/${report.id}`, { method: 'DELETE' })
 
-                            if (!response.ok) {
-                              throw new Error('Gagal menghapus report')
-                            }
+                            if (!response.ok) throw new Error('Gagal menghapus report')
 
-                            setReports((prevReports) =>
-                              prevReports.filter((r) => r.id !== report.id)
-                            )
-                            toast.success('Report berhasil dihapus')
+                            setReports((prev) => prev.filter((r) => r.id !== report.id))
+                            toast.success("Report berhasil dihapus")
                           } catch {
-                            toast.error('Error', {
-                              description: 'Gagal menghapus report. Silakan coba lagi.',
+                            toast.error("Error", {
+                              description: "Gagal menghapus report. Silakan coba lagi."
                             })
                           } finally {
                             setDeletingReports(new Map(deletingReports.delete(report.id) ? deletingReports : deletingReports))

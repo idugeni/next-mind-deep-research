@@ -3,6 +3,7 @@ import axios, { AxiosError, AxiosResponse } from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import UserAgent from "user-agents";
+import https from "https";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
@@ -45,6 +46,9 @@ async function fetchWithRetry(url: string, options: FetchOptions = {}, retryCoun
       agent = type === "http"
         ? new HttpsProxyAgent(proxyUrl)
         : new SocksProxyAgent(proxyUrl);
+    } else {
+      // Tambahkan agent untuk mengabaikan verifikasi SSL (hanya untuk development/testing)
+      agent = new https.Agent({ rejectUnauthorized: false });
     }
 
     const response = await axios({
@@ -123,6 +127,11 @@ export async function fetchUrlContent(url: string, options: FetchOptions = {}): 
       // Remove script and style elements
       $("script, style, iframe, nav, footer, header, aside").remove();
 
+      // Hilangkan elemen yang mengganggu sebelum ekstraksi konten utama
+      ["sidebar", "ads", "promo", "newsletter", "cookie", "popup", "subscribe", "banner", "related", "share", "comment"].forEach(cls => {
+        $(`[class*='${cls}'], [id*='${cls}']`).remove();
+      });
+
       // Extract the title
       const title = $("title").text().trim() || "Untitled Page";
 
@@ -130,10 +139,28 @@ export async function fetchUrlContent(url: string, options: FetchOptions = {}): 
       const metaDescription =
         $('meta[name="description"]').attr("content") || $('meta[property="og:description"]').attr("content") || "";
 
-      // Extract the main content
-      let mainContent = $("main").text() || $("article").text() || $("#content").text() || $(".content").text();
+      // Ambil gambar utama (og:image atau img pertama)
+      const ogImage = $('meta[property="og:image"]').attr("content") || $("img").first().attr("src") || "";
+      // Ambil tanggal publikasi jika ada
+      const pubDate = $('meta[property="article:published_time"]').attr("content") || $("time").attr("datetime") || "";
 
-      // If no main content container is found, use the body
+      // Tambahkan selector lain yang umum
+      let mainContent =
+        $("main").text() ||
+        $("article").text() ||
+        $("#content").text() ||
+        $(".content").text() ||
+        $(".post").text() ||
+        $(".entry-content").text() ||
+        $(".blog-post").text();
+
+      // Tambahkan heading di awal konten
+      const heading = $("h1").first().text().trim();
+      if (heading && mainContent && !mainContent.includes(heading)) {
+        mainContent = heading + "\n\n" + mainContent;
+      }
+
+      // Jika tidak ada main content container, gunakan paragraf
       if (!mainContent || mainContent.trim().length < 100) {
         const paragraphs = $("p")
           .map((_, el) => $(el).text().trim())
@@ -141,15 +168,21 @@ export async function fetchUrlContent(url: string, options: FetchOptions = {}): 
         mainContent = paragraphs.join("\n\n");
       }
 
-      // If still no substantial content, try to get text from all visible elements
+      // Jika masih belum cukup, ambil seluruh body
       if (!mainContent || mainContent.trim().length < 100) {
         mainContent = $("body").text().trim();
       }
 
-      // Combine title, meta description, and content
+      // Gabungkan hasil ekstraksi
       let extractedContent = `Title: ${title}\n\n`;
       if (metaDescription) {
         extractedContent += `Description: ${metaDescription}\n\n`;
+      }
+      if (ogImage) {
+        extractedContent += `Image: ${ogImage}\n\n`;
+      }
+      if (pubDate) {
+        extractedContent += `Published: ${pubDate}\n\n`;
       }
       extractedContent += `Content:\n${mainContent}`;
       return extractedContent.slice(0, 10000);

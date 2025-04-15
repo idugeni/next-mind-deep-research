@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,37 +11,40 @@ import { generateDocx } from "@/lib/docx-generator"
 import { generatePdf } from "@/lib/pdf-generator"
 import { Report, ReportDownloadParams, BlobDownloadParams } from "@/types/report"
 import { toast } from "sonner"
+import { fetchWithTimeout } from "@/lib/utils"
 
 export default function ReportPage() {
   const params = useParams()
-  const reportId = params.id
+  const reportId = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : undefined
   const [report, setReport] = useState<Report | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isGeneratingFile, setIsGeneratingFile] = useState(false)
 
   useEffect(() => {
-    const fetchReport = async () => {
+    const fetchReportData = async () => {
+      if (!reportId) {
+        toast.error("Error", { description: "Invalid or missing report ID." })
+        setIsLoading(false)
+        return
+      }
       try {
-        const response = await fetch(`/api/reports/${reportId}`)
-
+        // Gunakan fetchWithTimeout agar tidak hang jika API lambat
+        const response = await fetchWithTimeout(`/api/reports/${reportId}`, {}, 15000)
         if (!response.ok) {
           throw new Error("Failed to fetch report")
         }
-
         const data = await response.json()
         setReport(data.report)
-      } catch {
-        toast.error("Error", {
-          description: "Failed to load report. Please try again."
-        })
-      } finally {
+      } catch (error: any) {
+        if (error.name === "AbortError") {
+          toast.error("Timeout", { description: "Permintaan terlalu lama, silakan coba lagi." })
+        } else {
+          toast.error("Error", { description: error?.message || "Gagal mengambil data report." })
+        }
         setIsLoading(false)
       }
     }
-
-    if (reportId) {
-      fetchReport()
-    }
+    fetchReportData()
   }, [reportId])
 
   const handleDownloadMarkdown = () => {
@@ -114,14 +116,12 @@ export default function ReportPage() {
 
   if (!report) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <div className="container mx-auto py-8 px-4 max-w-7xl">
         <div className="mb-8">
-          <Link href="/reports">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Reports
-            </Button>
-          </Link>
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Reports
+          </Button>
         </div>
         <Card>
           <CardContent className="py-16 text-center">
@@ -129,9 +129,7 @@ export default function ReportPage() {
             <p className="text-muted-foreground mb-8">
               The report you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
-            <Link href="/">
-              <Button>Start New Research</Button>
-            </Link>
+            <Button>Start New Research</Button>
           </CardContent>
         </Card>
       </div>
@@ -143,50 +141,68 @@ export default function ReportPage() {
   const downloadText = language === "id" ? "Unduh" : "Download"
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
-      <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full bg-card p-4 rounded-lg shadow-sm">
-        <Link href="/reports">
-          <Button variant="outline" size="sm" className="hover:bg-primary hover:text-secondary-foreground transition-colors">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {backToReportsText}
-          </Button>
-        </Link>
+<div className="container mx-auto py-8 px-4 max-w-7xl">
+  <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full bg-card border border-border p-4 rounded-xl shadow-md">
+    <Button
+      variant="outline"
+      size="sm"
+      className="text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+    >
+      <ArrowLeft className="mr-2 h-4 w-4" />
+      {backToReportsText}
+    </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" disabled={isGeneratingFile} className="hover:bg-primary hover:text-primary-foreground transition-colors">
-              {isGeneratingFile ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {language === "id" ? "Memproses..." : "Processing..."}
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  {downloadText}
-                </>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={handleDownloadMarkdown} className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
-              <FileText className="mr-2 h-4 w-4" />
-              Markdown (.md)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDownloadWord} className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
-              <FileText className="mr-2 h-4 w-4" />
-              Word (.docx)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDownloadPdf} className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors">
-              <FileImage className="mr-2 h-4 w-4" />
-              PDF (.pdf)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="sm"
+          disabled={isGeneratingFile}
+          className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          {isGeneratingFile ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {language === "id" ? "Memproses..." : "Processing..."}
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              {downloadText}
+            </>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-48 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg"
+      >
+        <DropdownMenuItem
+          onClick={handleDownloadMarkdown}
+          className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          Markdown (.md)
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={handleDownloadWord}
+          className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          Word (.docx)
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={handleDownloadPdf}
+          className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <FileImage className="mr-2 h-4 w-4" />
+          PDF (.pdf)
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
 
-      <ReportViewer report={report} />
-    </div>
+  <ReportViewer report={report} />
+</div>
   )
 }
 

@@ -1,26 +1,10 @@
+import { Report } from "@/types/report"
+
 interface SourceWithContent {
   title: string
   link: string
   snippet: string
   content: string
-}
-
-interface Report {
-  id: string
-  title: string
-  query: string
-  summary: string
-  introduction: string
-  analysis: string
-  methodology?: string
-  findings?: string
-  discussion?: string
-  conclusion: string
-  recommendations?: string
-  references: string[]
-  createdAt: string
-  model: string
-  language: string
 }
 
 export async function generateReportWithGemini(
