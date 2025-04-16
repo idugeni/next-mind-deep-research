@@ -1,8 +1,7 @@
 "use client"
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-export type SearchLanguage = "id" | "en"
+import type { SearchLanguage } from "@/types/search"
 
 interface LanguageSelectorProps {
   selectedLanguage: SearchLanguage

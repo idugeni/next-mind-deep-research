@@ -17,7 +17,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { fetchWithTimeout } from "@/lib/utils"
+import { fetchWithTimeout, getErrorMessage } from "@/lib/utils"
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
@@ -37,7 +37,7 @@ export default function ReportsPage() {
         if (error.name === "AbortError") {
           toast.error("Timeout", { description: "Permintaan terlalu lama, silakan coba lagi." })
         } else {
-          toast.error("Error", { description: error?.message || "Gagal mengambil data reports." })
+          toast.error("Error", { description: getErrorMessage(error, "Gagal mengambil data reports.") })
         }
       } finally {
         setIsLoading(false)

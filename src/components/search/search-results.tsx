@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { ExternalLink, File, FileText, Image, Video, Globe, MapPin, Newspaper, Users, Check, Trash2 } from "lucide-react"
 import { SearchResult } from "@/types/search"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/utils"
 
 interface SearchResultsProps {
   results: SearchResult[]
@@ -62,7 +63,7 @@ export default function SearchResults({ results, onResultSelect, selectedResults
       !selectedResults.some(s => s.link === r.link)
     ).slice(0, maxSelected - selectedResults.length)
     if (toAdd.length === 0) {
-      toast.error(`Semua hasil pada filter ini sudah dipilih atau sudah mencapai batas.`)
+      toast.error(getErrorMessage(`Semua hasil pada filter ini sudah dipilih atau sudah mencapai batas.`))
       return
     }
     batchSelect(toAdd, true)
@@ -73,7 +74,7 @@ export default function SearchResults({ results, onResultSelect, selectedResults
       selectedResults.some(s => s.link === r.link)
     )
     if (toRemove.length === 0) {
-      toast.error("Tidak ada hasil yang bisa dihapus pada filter ini.")
+      toast.error(getErrorMessage(`Tidak ada hasil yang bisa dihapus pada filter ini.`))
       return
     }
     batchSelect(toRemove, false)
@@ -147,7 +148,7 @@ export default function SearchResults({ results, onResultSelect, selectedResults
         const checked = isSelected(result)
         const disabled = !checked && !canSelectMore
         return (
-          <Card key={index} className="overflow-hidden">
+          <Card key={index} className="overflow-hidden py-0 mt-4">
             <CardContent className="p-0">
               <div className="flex items-start p-4 gap-4">
                 <div className="pt-1">
@@ -157,7 +158,7 @@ export default function SearchResults({ results, onResultSelect, selectedResults
                     disabled={disabled}
                     onCheckedChange={(checked) => {
                       if (checked && !canSelectMore) {
-                        toast.error(`Maksimal ${maxSelected} hasil bisa dipilih.`)
+                        toast.error(getErrorMessage(`Maksimal ${maxSelected} hasil bisa dipilih.`))
                         return
                       }
                       onResultSelect(result, !!checked)

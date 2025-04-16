@@ -3,9 +3,10 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import SearchInput from "@/components/search/search-input"
-import LanguageSelector, { SearchLanguage } from "@/components/search/language-selector"
-import { SearchResult } from "@/types/search"
+import LanguageSelector from "@/components/search/language-selector"
+import type { SearchLanguage, SearchResult } from "@/types/search"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/utils"
 
 interface SearchSectionProps {
   onSearchComplete: (results: SearchResult[], query: string) => void
@@ -36,9 +37,8 @@ export default function SearchSection({ onSearchComplete }: SearchSectionProps) 
       onSearchComplete(data.items || [], query)
       setHasResult(!!(data.items && data.items.length > 0))
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to perform search. Please try again."
       toast.error("Error", {
-        description: errorMessage
+        description: getErrorMessage(error, "Failed to perform search. Please try again.")
       })
     } finally {
       setIsSearching(false)

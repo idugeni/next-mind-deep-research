@@ -11,7 +11,7 @@ import { generateDocx } from "@/lib/docx-generator"
 import { generatePdf } from "@/lib/pdf-generator"
 import { Report, ReportDownloadParams, BlobDownloadParams } from "@/types/report"
 import { toast } from "sonner"
-import { fetchWithTimeout } from "@/lib/utils"
+import { fetchWithTimeout, getErrorMessage } from "@/lib/utils"
 
 export default function ReportPage() {
   const params = useParams()
@@ -39,7 +39,7 @@ export default function ReportPage() {
         if (error.name === "AbortError") {
           toast.error("Timeout", { description: "Permintaan terlalu lama, silakan coba lagi." })
         } else {
-          toast.error("Error", { description: error?.message || "Gagal mengambil data report." })
+          toast.error("Error", { description: getErrorMessage(error, "Gagal mengambil data report.") })
         }
         setIsLoading(false)
       }

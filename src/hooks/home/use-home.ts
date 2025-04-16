@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { SearchResult } from "@/types/search"
-import { SearchLanguage } from "@/components/search/language-selector"
+import type { SearchResult, SearchLanguage } from "@/types/search"
 import { categorizeResults } from "@/lib/search-utils"
 import { useSelection } from "@/hooks/use-selection"
 import { DEFAULT_MODEL_ID } from "@/constants/models"
+import { getErrorMessage } from "@/lib/utils"
 
 type UseHomeReturn = {
   searchResults: SearchResult[]
@@ -41,14 +41,20 @@ export function useHome(): UseHomeReturn {
     handleBatchSelect
   } = useSelection([])
 
-  const handleSearchComplete = (results: SearchResult[], query: string) => {
-    const categorized = categorizeResults(results)
-    setSearchResults(categorized)
+  // Memoized categorized results (contoh jika ada komputasi berat)
+  const categorizedResults = useMemo(() => categorizeResults(searchResults), [searchResults])
+
+  // Memoized handler
+  const handleSearchComplete = useCallback((results: SearchResult[], query: string) => {
+    setSearchResults(results)
     setSelectedResults([])
     setSearchQuery(query)
-  }
+  }, [setSearchResults, setSelectedResults, setSearchQuery])
 
-  const handleGenerateReport = async () => {
+  const handleResultSelectMemo = useCallback(handleResultSelect, [handleResultSelect])
+  const handleBatchSelectMemo = useCallback(handleBatchSelect, [handleBatchSelect])
+
+  const handleGenerateReport = useCallback(async () => {
     if (!searchQuery || selectedResults.length === 0) {
       toast.error("Pilih minimal satu hasil pencarian untuk membuat laporan.")
       return
@@ -87,26 +93,25 @@ export function useHome(): UseHomeReturn {
       toast.success("Laporan berhasil dibuat!", { description: "Anda akan diarahkan ke halaman laporan." })
       setTimeout(() => router.push(`/reports/${data.reportId}`), 1000)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Gagal membuat laporan. Silakan coba lagi."
-      toast.error("Terjadi error saat generate laporan", { description: errorMessage })
+      toast.error("Terjadi error saat generate laporan", { description: getErrorMessage(error) })
     } finally {
       setIsGenerating(false)
     }
-  }
+  }, [searchQuery, selectedResults, selectedModel, selectedLanguage, router])
 
   return {
-    searchResults,
+    searchResults: categorizedResults, // gunakan hasil memoized jika perlu
     selectedResults,
     isGenerating,
     selectedModel,
     selectedLanguage,
     setSelectedLanguage,
     handleSearchComplete,
-    handleResultSelect,
+    handleResultSelect: handleResultSelectMemo,
     handleGenerateReport,
     setSelectedModel,
     setSearchResults,
     setSelectedResults,
-    handleBatchSelect,
+    handleBatchSelect: handleBatchSelectMemo,
   }
 }

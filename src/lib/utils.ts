@@ -27,5 +27,15 @@ export async function fetchWithTimeout(url: string, options: RequestInit = {}, t
   }
 }
 
+// Utility: Standardize error message for toast and logging
+export function getErrorMessage(error: unknown, fallback = "Terjadi kesalahan. Silakan coba lagi."): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === "string") return error
+  if (error && typeof error === "object" && "message" in error && typeof (error as any).message === "string") {
+    return (error as any).message
+  }
+  return fallback
+}
+
 // Re-export categorizeResults and detectResultType for centralization
 export { categorizeResults, detectResultType } from "./search-utils"
