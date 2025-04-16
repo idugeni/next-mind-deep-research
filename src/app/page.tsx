@@ -26,10 +26,10 @@ export default function Home() {
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       <HeroSection />
       <SearchSection onSearchComplete={handleSearchComplete} />
-      {searchResults.length === 0 && <FeaturesSection />}
-      {/* Tampilkan SearchResults SAJA jika hasil search ada, ResultSection hanya untuk generate report */}
-      {searchResults.length > 0 && (
-        <>
+      {/* Selalu render SearchResults agar fallback 'Tidak ada hasil ditemukan' muncul kalau hasil kosong */}
+      <div className="mt-4">
+        {/* Header dan aksi hanya jika hasil ada */}
+        {searchResults.length > 0 && (
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
             <h2 className="text-xl font-semibold">Search Results ({searchResults.length})</h2>
             <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
@@ -50,14 +50,16 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <SearchResults
-            results={searchResults}
-            selectedResults={selectedResults}
-            onResultSelect={handleResultSelect}
-            onBatchSelect={handleBatchSelect}
-          />
-        </>
-      )}
+        )}
+        <SearchResults
+          results={searchResults}
+          selectedResults={selectedResults}
+          onResultSelect={handleResultSelect}
+          onBatchSelect={handleBatchSelect}
+        />
+      </div>
+      {/* Tampilkan FeaturesSection hanya jika belum pernah search (misal: selectedResults dan searchResults kosong, bisa tambahkan state isInitialSearch jika ingin lebih presisi) */}
+      {searchResults.length === 0 && selectedResults.length === 0 && <FeaturesSection />}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { rateLimit } from "@/lib/rate-limiter"
 import { fetchUrlContent } from "@/lib/fetch-content"
 import { generateReportWithGemini } from "@/lib/gemini"
 import { saveReport } from "@/lib/reports-store"
+import { DEFAULT_MODEL_ID } from "@/constants/models"
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,8 +88,13 @@ Title: ${result.title || "No title available"}`,
 
     const resultsWithContent = await Promise.all(contentPromises)
 
-    // Generate report using Gemini
-    const report = await generateReportWithGemini(query, resultsWithContent, model || "gemini-2.5-pro-exp-03-25", language)
+    // Proses generate report bisa lama, set timeout fetchWithTimeout jadi 60 detik
+    const report = await generateReportWithGemini(
+      query,
+      resultsWithContent,
+      model || DEFAULT_MODEL_ID,
+      language
+    )
 
     // Save the report
     const savedReport = await saveReport(report)

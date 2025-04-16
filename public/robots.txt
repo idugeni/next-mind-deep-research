@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://nextmind.oldsoul.id/sitemap.xml

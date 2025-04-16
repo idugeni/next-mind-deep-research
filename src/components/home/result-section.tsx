@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import ModelSelector from "@/components/model-selector"
+import SearchResults from "@/components/search/search-results"
 import { SearchResult } from "@/types/search"
 
 interface ResultSectionProps {
@@ -12,6 +13,7 @@ interface ResultSectionProps {
   isGenerating: boolean
   selectedModel: string
   onModelChange: (model: string) => void
+  onResultSelect: (result: SearchResult, isSelected: boolean) => void
 }
 
 export default function ResultSection({
@@ -21,9 +23,8 @@ export default function ResultSection({
   isGenerating,
   selectedModel,
   onModelChange,
+  onResultSelect,
 }: ResultSectionProps) {
-  if (searchResults.length === 0) return null
-
   return (
     <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
@@ -47,12 +48,11 @@ export default function ResultSection({
         </div>
       </div>
 
-      {/* Hapus komponen SearchResults di sini untuk menghindari duplikasi UI filter/list hasil */}
-      {/* <SearchResults
+      <SearchResults
         results={searchResults}
         onResultSelect={onResultSelect}
         selectedResults={selectedResults}
-      /> */}
+      />
     </>
   )
 }

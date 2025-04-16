@@ -4,9 +4,11 @@ export type Report = {
   query: string;
   summary: string;
   introduction: string;
+  literature_review?: string;
   methodology?: string;
   findings?: string;
   analysis: string;
+  critical_appraisal?: string;
   discussion?: string;
   conclusion: string;
   recommendations?: string;

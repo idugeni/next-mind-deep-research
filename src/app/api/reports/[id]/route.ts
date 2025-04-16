@@ -7,30 +7,20 @@ export async function GET(
   context: { params: { id: string } }
 ) {
   try {
-    const reportId = (await context.params).id
+    const { id: reportId } = await context.params
 
     if (!reportId) {
       return NextResponse.json({ message: "Report ID is required" }, { status: 400 })
     }
 
-    try {
-      const report = await getReportById(reportId)
-
-      if (!report) {
-        return NextResponse.json({ message: "Report not found" }, { status: 404 })
-      }
-
-      return NextResponse.json({ report })
-    } catch (error) {
-      const reportError = error as Error
-      toast.error(`Error retrieving report: ${reportError.message}`)
-      return NextResponse.json({ message: `Error retrieving report: ${reportError.message}` }, { status: 500 })
+    const report = await getReportById(reportId)
+    if (!report) {
+      return NextResponse.json({ message: "Report not found" }, { status: 404 })
     }
+    return NextResponse.json(report)
   } catch (error) {
-    const err = error as Error
-    toast.error("Error fetching report: " + err.message)
     return NextResponse.json(
-      { message: err.message || "An error occurred while fetching the report" },
+      { message: (error instanceof Error ? error.message : "An error occurred while fetching the report") },
       { status: 500 },
     )
   }
@@ -41,7 +31,7 @@ export async function DELETE(
   context: { params: { id: string } }
 ) {
   try {
-    const reportId = (await context.params).id
+    const { id: reportId } = await context.params
 
     if (!reportId) {
       return NextResponse.json({ message: "Report ID is required" }, { status: 400 })
@@ -49,7 +39,6 @@ export async function DELETE(
 
     try {
       const report = await getReportById(reportId)
-
       if (!report) {
         return NextResponse.json({ message: "Report not found" }, { status: 404 })
       }

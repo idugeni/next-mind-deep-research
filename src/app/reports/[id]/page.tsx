@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, ArrowLeft, Download, FileText, FileImage } from "lucide-react"
 import ReportViewer from "@/components/report/report-viewer"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -12,6 +11,7 @@ import { generatePdf } from "@/lib/pdf-generator"
 import { Report, ReportDownloadParams, BlobDownloadParams } from "@/types/report"
 import { toast } from "sonner"
 import { fetchWithTimeout, getErrorMessage } from "@/lib/utils"
+import Link from "next/link"
 
 export default function ReportPage() {
   const params = useParams()
@@ -34,18 +34,38 @@ export default function ReportPage() {
           throw new Error("Failed to fetch report")
         }
         const data = await response.json()
-        setReport(data.report)
-      } catch (error: any) {
-        if (error.name === "AbortError") {
-          toast.error("Timeout", { description: "Permintaan terlalu lama, silakan coba lagi." })
+        // Karena API sekarang mengembalikan objek report langsung, bukan { report: ... }
+        setReport(data)
+        setIsLoading(false)
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          if (error.name === "AbortError") {
+            toast.error("Timeout", { description: "Permintaan terlalu lama, silakan coba lagi." })
+          } else {
+            toast.error("Error", { description: getErrorMessage(error, "Gagal mengambil data report.") })
+          }
         } else {
-          toast.error("Error", { description: getErrorMessage(error, "Gagal mengambil data report.") })
+          toast.error("Error", { description: "Gagal mengambil data report (unknown error)." })
         }
         setIsLoading(false)
       }
     }
     fetchReportData()
   }, [reportId])
+
+  // Helper: validasi report minimal agar tidak render data rusak/kosong
+  function isValidReport(report: unknown): report is Report {
+    if (!report || typeof report !== 'object') return false;
+    const r = report as Record<string, unknown>;
+    return (
+      typeof r.title === 'string' &&
+      typeof r.summary === 'string' &&
+      typeof r.introduction === 'string' &&
+      typeof r.analysis === 'string' &&
+      typeof r.conclusion === 'string' &&
+      Array.isArray(r.references)
+    );
+  }
 
   const handleDownloadMarkdown = () => {
     if (!report) return
@@ -108,30 +128,24 @@ export default function ReportPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-16 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-[60vh] w-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     )
   }
 
-  if (!report) {
+  if (!isValidReport(report)) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
-        <div className="mb-8">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Reports
-          </Button>
+      <div className="container mx-auto py-16 flex flex-col items-center gap-4">
+        <div className="text-2xl font-semibold text-center text-muted-foreground">
+          Report tidak ditemukan atau gagal dimuat.
         </div>
-        <Card>
-          <CardContent className="py-16 text-center">
-            <h1 className="text-2xl font-bold mb-4">Report Not Found</h1>
-            <p className="text-muted-foreground mb-8">
-              The report you&apos;re looking for doesn&apos;t exist or has been removed.
-            </p>
-            <Button>Start New Research</Button>
-          </CardContent>
-        </Card>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/reports">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Kembali ke Laporan
+          </Link>
+        </Button>
       </div>
     )
   }
@@ -144,12 +158,15 @@ export default function ReportPage() {
 <div className="container mx-auto py-8 px-4 max-w-7xl">
   <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full bg-card border border-border p-4 rounded-xl shadow-md">
     <Button
+      asChild
       variant="outline"
       size="sm"
       className="text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
     >
-      <ArrowLeft className="mr-2 h-4 w-4" />
-      {backToReportsText}
+      <Link href="/reports">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        {backToReportsText}
+      </Link>
     </Button>
 
     <DropdownMenu>
@@ -221,35 +238,30 @@ function generateMarkdownReport(report: Report): string {
     references: language === "id" ? "Referensi" : "References",
   }
 
-  let markdown = `# ${report.title}\n\n`
-
-  markdown += `## ${labels.executiveSummary}\n\n${report.summary}\n\n`
-  markdown += `## ${labels.introduction}\n\n${report.introduction}\n\n`
-
-  if (report.methodology) {
-    markdown += `## ${labels.methodology}\n\n${report.methodology}\n\n`
+  // Helper: Trim and ensure only single empty line between sections
+  function section(title: string, content?: string | null | undefined) {
+    if (!content || !content.trim()) return '';
+    return `## ${title}\n\n${content.trim()}\n`;
   }
 
-  if (report.findings) {
-    markdown += `## ${labels.findings}\n\n${report.findings}\n\n`
-  }
+  let markdown = `# ${report.title.trim()}\n\n`;
 
-  markdown += `## ${labels.analysis}\n\n${report.analysis}\n\n`
+  markdown += section(labels.executiveSummary, report.summary) + '\n';
+  markdown += section(labels.introduction, report.introduction) + '\n';
+  markdown += report.methodology ? section(labels.methodology, report.methodology) + '\n' : '';
+  markdown += report.findings ? section(labels.findings, report.findings) + '\n' : '';
+  markdown += section(labels.analysis, report.analysis) + '\n';
+  markdown += report.discussion ? section(labels.discussion, report.discussion) + '\n' : '';
+  markdown += section(labels.conclusion, report.conclusion) + '\n';
+  markdown += report.recommendations ? section(labels.recommendations, report.recommendations) + '\n' : '';
 
-  if (report.discussion) {
-    markdown += `## ${labels.discussion}\n\n${report.discussion}\n\n`
-  }
-
-  markdown += `## ${labels.conclusion}\n\n${report.conclusion}\n\n`
-
-  if (report.recommendations) {
-    markdown += `## ${labels.recommendations}\n\n${report.recommendations}\n\n`
-  }
-
-  markdown += `## ${labels.references}\n\n`
+  markdown += `## ${labels.references}\n\n`;
   report.references.forEach((reference: string) => {
-    markdown += `${reference}\n`
-  })
+    if (reference && reference.trim()) {
+      markdown += `${reference.trim()}\n`;
+    }
+  });
 
-  return markdown
+  // Hapus baris baru berlebih di akhir
+  return markdown.replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }

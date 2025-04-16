@@ -33,11 +33,15 @@ export default function ReportsPage() {
         }
         const data = await response.json()
         setReports(data.reports)
-      } catch (error: any) {
-        if (error.name === "AbortError") {
-          toast.error("Timeout", { description: "Permintaan terlalu lama, silakan coba lagi." })
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          if (error.name === "AbortError") {
+            toast.error("Timeout", { description: "Permintaan terlalu lama, silakan coba lagi." })
+          } else {
+            toast.error("Error", { description: getErrorMessage(error, "Gagal mengambil data reports.") })
+          }
         } else {
-          toast.error("Error", { description: getErrorMessage(error, "Gagal mengambil data reports.") })
+          toast.error("Error", { description: "Gagal mengambil data reports (unknown error)." })
         }
       } finally {
         setIsLoading(false)
@@ -48,8 +52,8 @@ export default function ReportsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-16 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center min-h-[60vh] w-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     )
   }

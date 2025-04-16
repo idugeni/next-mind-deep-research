@@ -58,21 +58,52 @@ export async function getReportById(id: string): Promise<Report | null> {
 
     let parsed: unknown;
     if (typeof reportData === "string") {
-      parsed = JSON.parse(reportData);
+      try {
+        parsed = JSON.parse(reportData);
+      } catch {
+        // Fallback: JSON5 jika tersedia
+        try {
+          const json5 = await import("json5");
+          parsed = json5.parse(reportData);
+        } catch (e) {
+          console.error("Report JSON parse error:", e, "\nRaw:", reportData)
+          return null
+        }
+      }
     } else if (typeof reportData === "object" && reportData !== null) {
       parsed = reportData;
     } else {
       throw new Error("Invalid report data type");
     }
 
+    // Perbaikan: Jangan gagal hanya karena properti opsional (methodology/findings/dll) kosong
     if (!isValidReport(parsed)) {
-      throw new Error("Report data does not conform to the Report type");
+      // Cek jika semua properti wajib ada, properti opsional boleh kosong
+      const r = parsed as Record<string, unknown>
+      if (
+        r &&
+        typeof r.id === "string" &&
+        typeof r.title === "string" &&
+        typeof r.query === "string" &&
+        typeof r.summary === "string" &&
+        typeof r.introduction === "string" &&
+        typeof r.analysis === "string" &&
+        typeof r.conclusion === "string" &&
+        Array.isArray(r.references) &&
+        typeof r.createdAt === "string" &&
+        typeof r.model === "string"
+      ) {
+        return r as Report
+      }
+      // Jika tidak valid, log error
+      console.error("Report data does not conform to the Report type", parsed)
+      return null
     }
 
-    return parsed;
+    return parsed as Report;
   } catch (error) {
     console.error(`Error getting report ${id}:`, error)
-    throw error
+    return null
   }
 }
 

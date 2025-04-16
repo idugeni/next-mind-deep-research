@@ -2,14 +2,12 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ExternalLink, File, FileText, Image, Video, Globe, MapPin, Newspaper, Users, Check, Trash2 } from "lucide-react"
+import { File, FileText, Image, Video, Globe, MapPin, Newspaper, Users } from "lucide-react"
 import { SearchResult } from "@/types/search"
 import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/utils"
+import SearchResultItem from "./search-result-item";
+import SearchResultFilterBar from "./search-result-filter-bar";
 
 interface SearchResultsProps {
   results: SearchResult[]
@@ -33,7 +31,8 @@ const typeIconMap = {
 } as const;
 
 export default function SearchResults({ results, onResultSelect, selectedResults, onBatchSelect }: SearchResultsProps) {
-  const maxSelected = 5
+  // Ubah batas maksimal pilihan menjadi 10
+  const maxSelected = 10
   const [filter, setFilter] = useState<string>("all")
 
   // Kategori unik hasil
@@ -80,6 +79,55 @@ export default function SearchResults({ results, onResultSelect, selectedResults
     batchSelect(toRemove, false)
   }
 
+  // Fitur pemilihan cerdas (smart select DEEP RESEARCH)
+  const handleSmartSelect = () => {
+    // 1. Prioritaskan hasil yang mengandung kata kunci "deep research", "studi", "analisis", "makalah", "paper", "laporan", "dataset", "review", "literature" pada title/snippet
+    // 2. Prioritaskan file akademik: pdf, word, presentation
+    // 3. Prioritaskan hasil dari domain .edu, .ac.id, .org, atau domain riset
+    // 4. Jika ada properti important/score, tetap diperhitungkan sebagai bonus
+    // 5. Jangan memilih semua hasil jika hasil < maxSelected, tetap pilih yang paling relevan
+    const keywords = [
+      /deep research/i, /studi/i, /analisis/i, /makalah/i, /paper/i, /laporan/i, /dataset/i, /review/i, /literature/i
+    ];
+    const academicTypes = ["pdf", "word", "presentation"];
+    const academicDomains = [".edu", ".ac.id", ".org", "research", "journal", "repository", "scholar"];
+
+    // Skoring tiap hasil
+    function smartScore(result: SearchResult) {
+      let score = 0;
+      // Kata kunci pada title/snippet
+      if (keywords.some(re => re.test(result.title) || re.test(result.snippet))) score += 10;
+      // File akademik
+      if (result.type && academicTypes.includes(result.type)) score += 8;
+      // Domain akademik
+      if (result.displayLink && academicDomains.some(dom => result.displayLink.includes(dom))) score += 6;
+      // Flag important dari API (jika ada)
+      if (result.important) score += 5;
+      // Score dari API (jika ada)
+      if (typeof result.score === 'number') score += result.score;
+      // Tambahan: file PDF lebih tinggi
+      if ((result.mime||"").includes("pdf")) score += 2;
+      // Tambahan: judul mengandung "summary", "meta analysis"
+      if (/summary|meta analysis/i.test(result.title)) score += 2;
+      // Penalti jika dari domain komersial
+      if (result.displayLink && /tokopedia|bukalapak|shopee|facebook|instagram|twitter|tiktok/.test(result.displayLink)) score -= 5;
+      return score;
+    }
+
+    // Urutkan berdasarkan skor cerdas
+    const sorted = [...filteredResults]
+      .map(r => ({...r, _smartScore: smartScore(r)}))
+      .sort((a, b) => b._smartScore - a._smartScore)
+      .filter((r, i) => r._smartScore > 0 || i < maxSelected); // minimal ambil yang skornya > 0, jika tidak cukup tetap ambil sesuai urutan
+    // Hanya pilih yang belum dipilih
+    const notYetSelected = sorted.filter(r => !isSelected(r)).slice(0, maxSelected - selectedResults.length);
+    if (notYetSelected.length === 0) {
+      toast.error("Tidak ada hasil cerdas yang bisa dipilih.");
+      return;
+    }
+    batchSelect(notYetSelected, true);
+  }
+
   // Highlight keyword (asumsi keyword ada di window.searchQuery atau props, fallback tidak highlight)
   function highlight(text: string) {
     // @ts-expect-error: window may have custom searchQuery property injected elsewhere
@@ -99,94 +147,46 @@ export default function SearchResults({ results, onResultSelect, selectedResults
   const canSelectMore = selectedResults.length < maxSelected
 
   // Jangan render filter & aksi jika tidak ada hasil
-  if (!results || results.length === 0) return null
+  if (!results || results.length === 0) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+        <div className="text-2xl font-semibold mb-2">Tidak ada hasil ditemukan</div>
+        <div className="text-sm">Coba perbaiki kata kunci, filter, atau gunakan rentang waktu yang berbeda.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       {/* Filter dan aksi */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-2">
-        {/* Kiri: Filter */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">Filter:</span>
-          {categories.map((cat: string) => (
-            <Button
-              key={cat}
-              size="sm"
-              variant={filter === cat ? "default" : "outline"}
-              className="text-xs px-3"
-              onClick={() => setFilter(cat)}
-            >
-              {cat.toUpperCase()}
-            </Button>
-          ))}
-        </div>
-        {/* Kanan: Info dan aksi */}
-        <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-0">
-          <Badge variant="secondary">
-            {selectedResults.length} / {maxSelected} dipilih
-          </Badge>
-          <Button
-            size="sm"
-            variant="default"
-            onClick={handleSelectAll}
-            disabled={filteredResults.length === 0 || selectedResults.length >= maxSelected}
-          >
-            <Check className="w-4 h-4 mr-1" /> Pilih Semua
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleDeselectAll}
-            disabled={selectedResults.length === 0}
-          >
-            <Trash2 className="w-4 h-4 mr-1" /> Hapus Pilihan
-          </Button>
-        </div>
-      </div>
+      <SearchResultFilterBar
+        categories={categories}
+        filter={filter}
+        setFilter={setFilter}
+        selectedCount={selectedResults.length}
+        maxSelected={maxSelected}
+        onSelectAll={handleSelectAll}
+        onDeselectAll={handleDeselectAll}
+        disableSelectAll={!canSelectMore || filteredResults.length === 0}
+        disableDeselectAll={selectedResults.length === 0}
+        onSmartSelect={handleSmartSelect}
+      />
       {filteredResults.map((result: SearchResult, index: number) => {
         const icon = typeIconMap[(result.type as keyof typeof typeIconMap) ?? 'other'] ?? typeIconMap.other
         const checked = isSelected(result)
         const disabled = !checked && !canSelectMore
         return (
-          <Card key={index} className="overflow-hidden py-0 mt-4">
-            <CardContent className="p-0">
-              <div className="flex items-start p-4 gap-4">
-                <div className="pt-1">
-                  <Checkbox
-                    id={`result-${index}`}
-                    checked={checked}
-                    disabled={disabled}
-                    onCheckedChange={(checked) => {
-                      if (checked && !canSelectMore) {
-                        toast.error(getErrorMessage(`Maksimal ${maxSelected} hasil bisa dipilih.`))
-                        return
-                      }
-                      onResultSelect(result, !!checked)
-                    }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    {icon}
-                    <h3 className="font-medium line-clamp-2" dangerouslySetInnerHTML={{ __html: highlight(result.title) }} />
-                  </div>
-                  <a
-                    href={result.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-muted-foreground flex items-center hover:underline truncate mb-2"
-                  >
-                    {result.displayLink}
-                    <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
-                  <p
-                    className="text-sm text-muted-foreground line-clamp-2"
-                    dangerouslySetInnerHTML={{ __html: highlight(result.snippet) }}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <SearchResultItem
+            key={index}
+            result={result}
+            icon={icon}
+            checked={checked}
+            disabled={disabled}
+            maxSelected={maxSelected}
+            canSelectMore={canSelectMore}
+            onResultSelect={onResultSelect}
+            highlight={highlight}
+          />
         )
       })}
     </div>

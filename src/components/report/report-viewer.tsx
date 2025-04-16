@@ -1,15 +1,6 @@
 "use client"
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import { id, enUS } from "date-fns/locale"
 import ReportMeta from "./report-meta"
-import ReportSectionCard from "./report-section-card"
-import ReferencesList from "./references-list"
 import {
   FileText,
   ListOrdered,
@@ -22,10 +13,8 @@ import {
   Lightbulb,
   Library,
 } from "lucide-react"
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
 import { Report } from "@/types/report"
+import ReportTabs from "./report-tabs"
 
 interface ReportViewerProps {
   report: Report
@@ -33,8 +22,6 @@ interface ReportViewerProps {
 
 export default function ReportViewer({ report }: ReportViewerProps) {
   const language = report.language || "en"
-  const dateLocale = language === "id" ? id : enUS
-  const [activeTab, setActiveTab] = useState("full")
 
   const t = {
     full: language === "id" ? "Laporan Lengkap" : "Full Report",
@@ -89,89 +76,12 @@ export default function ReportViewer({ report }: ReportViewerProps) {
         modelLabel={t.model}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList
-          className="w-full flex gap-0 justify-between overflow-x-auto scroll-smooth scroll-px-4 snap-x scrollbar-hide bg-muted border border-border rounded-full shadow-md p-1 h-[48px] min-h-[48px] transition-colors duration-300"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {tabList.map((tab) => {
-            const Icon = tabIcons[tab.value as keyof typeof tabIcons] || FileText;
-            const isActive = tab.value === activeTab
-
-            return (
-              <Tooltip key={tab.value}>
-                <TooltipTrigger asChild>
-                  <TabsTrigger
-                    value={tab.value}
-                    className={cn(
-                      "flex-1 min-w-0 h-full flex items-center justify-center rounded-full px-0 py-0 text-base font-medium whitespace-nowrap transition-all duration-300 ease-in-out border shadow-none",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                      isActive
-                        ? "bg-primary text-primary-foreground border-primary shadow"
-                        : "bg-muted text-muted-foreground border-transparent"
-                    )}
-                  >
-                    <Icon className={cn("w-5 h-5", isActive ? "stroke-primary-foreground" : "stroke-muted-foreground")} />
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">{tab.label}</TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </TabsList>
-
-        {/* Tabs Content */}
-        <TabsContent value="full" className="mt-6 space-y-6 animate-fade-in">
-          <ReportSectionCard title={t.executiveSummary}>
-            <p>{report.summary}</p>
-          </ReportSectionCard>
-          <ReportSectionCard title={t.introduction}>{report.introduction}</ReportSectionCard>
-          {report.methodology && <ReportSectionCard title={t.methodology}>{report.methodology}</ReportSectionCard>}
-          {report.findings && <ReportSectionCard title={t.findings}>{report.findings}</ReportSectionCard>}
-          <ReportSectionCard title={t.analysis}>{report.analysis}</ReportSectionCard>
-          {report.discussion && <ReportSectionCard title={t.discussion}>{report.discussion}</ReportSectionCard>}
-          <ReportSectionCard title={t.conclusion}>{report.conclusion}</ReportSectionCard>
-          {report.recommendations && <ReportSectionCard title={t.recommendations}>{report.recommendations}</ReportSectionCard>}
-          <ReferencesList references={report.references} title={t.references} />
-        </TabsContent>
-
-        {tabList.map(tab => {
-          if (tab.value === "full") return null
-          return (
-            <TabsContent key={tab.value} value={tab.value} className="mt-6 animate-fade-in">
-              {tab.value === "summary" && (
-                <ReportSectionCard title={t.executiveSummary}>
-                  <p>{report.summary}</p>
-                </ReportSectionCard>
-              )}
-              {tab.value === "introduction" && (
-                <ReportSectionCard title={t.introduction}>{report.introduction}</ReportSectionCard>
-              )}
-              {tab.value === "methodology" && report.methodology && (
-                <ReportSectionCard title={t.methodology}>{report.methodology}</ReportSectionCard>
-              )}
-              {tab.value === "findings" && report.findings && (
-                <ReportSectionCard title={t.findings}>{report.findings}</ReportSectionCard>
-              )}
-              {tab.value === "analysis" && (
-                <ReportSectionCard title={t.analysis}>{report.analysis}</ReportSectionCard>
-              )}
-              {tab.value === "discussion" && report.discussion && (
-                <ReportSectionCard title={t.discussion}>{report.discussion}</ReportSectionCard>
-              )}
-              {tab.value === "conclusion" && (
-                <ReportSectionCard title={t.conclusion}>{report.conclusion}</ReportSectionCard>
-              )}
-              {tab.value === "recommendations" && report.recommendations && (
-                <ReportSectionCard title={t.recommendations}>{report.recommendations}</ReportSectionCard>
-              )}
-              {tab.value === "references" && (
-                <ReferencesList references={report.references} title={t.references} />
-              )}
-            </TabsContent>
-          )
-        })}
-      </Tabs>
+      <ReportTabs
+        tabList={tabList}
+        tabIcons={tabIcons}
+        report={report}
+        t={t}
+      />
     </div>
   )
 }
