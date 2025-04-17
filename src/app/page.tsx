@@ -8,8 +8,11 @@ import ModelSelector from "@/components/model-selector";
 import { Button } from "@/components/ui/button"; 
 import { Loader2 } from "lucide-react"; 
 import { useHome } from "@/hooks/home/use-home"
+import { useDocumentMeta } from '@/hooks/use-document-meta'
+import { MAIN_TITLE, DEFAULT_DESCRIPTION } from '@/lib/metadata'
 
 export default function Home() {
+  useDocumentMeta(MAIN_TITLE, DEFAULT_DESCRIPTION)
   const {
     searchResults,
     selectedResults,
@@ -54,7 +57,7 @@ export default function Home() {
         <SearchResults
           results={searchResults}
           selectedResults={selectedResults}
-          onResultSelect={handleResultSelect}
+          onResultSelectAction={handleResultSelect}
           onBatchSelect={handleBatchSelect}
         />
       </div>

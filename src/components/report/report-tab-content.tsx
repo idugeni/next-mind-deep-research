@@ -1,7 +1,6 @@
 import React from "react";
 import ReportSectionCard from "./report-section-card";
 import ReferencesList from "./references-list";
-import MarkdownRenderer from "./markdown-renderer";
 
 interface ReportTabContentProps {
   tabList: { value: string; label: string }[];
@@ -37,16 +36,6 @@ export default function ReportTabContent({ tabList, report, t, activeTab }: Repo
     return str.replace(/^[\s\n]+|[\s\n]+$/g, '').replace(/\n{3,}/g, '\n\n');
   }
 
-  // Helper to convert array of object to markdown table
-  // function arrayToMarkdownTable(arr: { [key: string]: string }[], headers?: string[]) {
-  //   if (!arr.length) return '';
-  //   const keys = headers || Object.keys(arr[0]);
-  //   const headerRow = `| ${keys.join(' | ')} |`;
-  //   const separator = `|${keys.map(() => '---').join('|')}|`;
-  //   const rows = arr.map(obj => `| ${keys.map(k => obj[k] || '').join(' | ')} |`);
-  //   return [headerRow, separator, ...rows].join('\n');
-  // }
-
   // Helper untuk render konten tiap tab
   const renderContent = (tabValue: string) => {
     switch (tabValue) {
@@ -54,38 +43,38 @@ export default function ReportTabContent({ tabList, report, t, activeTab }: Repo
         return (
           <div className="mt-6 space-y-6 animate-fade-in">
             <ReportSectionCard title={t.executiveSummary}>
-              <MarkdownRenderer>{normalizeContent(report.summary)}</MarkdownRenderer>
+              {normalizeContent(report.summary)}
             </ReportSectionCard>
-            <ReportSectionCard title={t.introduction}><MarkdownRenderer>{normalizeContent(report.introduction)}</MarkdownRenderer></ReportSectionCard>
-            {report.methodology && <ReportSectionCard title={t.methodology}><MarkdownRenderer>{normalizeContent(report.methodology)}</MarkdownRenderer></ReportSectionCard>}
-            {report.findings && <ReportSectionCard title={t.findings}><MarkdownRenderer>{normalizeContent(report.findings)}</MarkdownRenderer></ReportSectionCard>}
-            <ReportSectionCard title={t.analysis}><MarkdownRenderer>{normalizeContent(report.analysis)}</MarkdownRenderer></ReportSectionCard>
-            {report.discussion && <ReportSectionCard title={t.discussion}><MarkdownRenderer>{normalizeContent(report.discussion)}</MarkdownRenderer></ReportSectionCard>}
-            <ReportSectionCard title={t.conclusion}><MarkdownRenderer>{normalizeContent(report.conclusion)}</MarkdownRenderer></ReportSectionCard>
-            {report.recommendations && <ReportSectionCard title={t.recommendations}><MarkdownRenderer>{normalizeContent(report.recommendations)}</MarkdownRenderer></ReportSectionCard>}
+            <ReportSectionCard title={t.introduction}>{normalizeContent(report.introduction)}</ReportSectionCard>
+            {report.methodology && <ReportSectionCard title={t.methodology}>{normalizeContent(report.methodology)}</ReportSectionCard>}
+            {report.findings && <ReportSectionCard title={t.findings}>{normalizeContent(report.findings)}</ReportSectionCard>}
+            <ReportSectionCard title={t.analysis}>{normalizeContent(report.analysis)}</ReportSectionCard>
+            {report.discussion && <ReportSectionCard title={t.discussion}>{normalizeContent(report.discussion)}</ReportSectionCard>}
+            <ReportSectionCard title={t.conclusion}>{normalizeContent(report.conclusion)}</ReportSectionCard>
+            {report.recommendations && <ReportSectionCard title={t.recommendations}>{normalizeContent(report.recommendations)}</ReportSectionCard>}
             <ReferencesList references={Array.isArray(report.references) ? report.references : []} title={t.references} />
           </div>
         );
       case "summary":
         return (
           <ReportSectionCard title={t.executiveSummary}>
-            <MarkdownRenderer>{normalizeContent(report.summary)}</MarkdownRenderer>
+            {normalizeContent(report.summary)}
           </ReportSectionCard>
         );
       case "introduction":
-        return <ReportSectionCard title={t.introduction}><MarkdownRenderer>{normalizeContent(report.introduction)}</MarkdownRenderer></ReportSectionCard>;
+        return <ReportSectionCard title={t.introduction}>{normalizeContent(report.introduction)}</ReportSectionCard>;
       case "methodology":
-        return report.methodology ? <ReportSectionCard title={t.methodology}><MarkdownRenderer>{normalizeContent(report.methodology)}</MarkdownRenderer></ReportSectionCard> : null;
+        return report.methodology ? <ReportSectionCard title={t.methodology}>{normalizeContent(report.methodology)}</ReportSectionCard> : null;
       case "findings":
-        return report.findings ? <ReportSectionCard title={t.findings}><MarkdownRenderer>{normalizeContent(report.findings)}</MarkdownRenderer></ReportSectionCard> : null;
+        return report.findings ? <ReportSectionCard title={t.findings}>{normalizeContent(report.findings)}</ReportSectionCard> : null;
       case "analysis":
-        return <ReportSectionCard title={t.analysis}><MarkdownRenderer>{normalizeContent(report.analysis)}</MarkdownRenderer></ReportSectionCard>;
+        return <ReportSectionCard title={t.analysis}>{normalizeContent(report.analysis)}</ReportSectionCard>;
       case "discussion":
-        return report.discussion ? <ReportSectionCard title={t.discussion}><MarkdownRenderer>{normalizeContent(report.discussion)}</MarkdownRenderer></ReportSectionCard> : null;
+        return report.discussion ? <ReportSectionCard title={t.discussion}>{normalizeContent(report.discussion)}</ReportSectionCard> : null;
       case "conclusion":
-        return <ReportSectionCard title={t.conclusion}><MarkdownRenderer>{normalizeContent(report.conclusion)}</MarkdownRenderer></ReportSectionCard>;
+        return <ReportSectionCard title={t.conclusion}>{normalizeContent(report.conclusion)}</ReportSectionCard>;
       case "recommendations":
-        return report.recommendations ? <ReportSectionCard title={t.recommendations}><MarkdownRenderer>{normalizeContent(report.recommendations)}</MarkdownRenderer></ReportSectionCard> : null;
+        return report.recommendations ? <ReportSectionCard title={t.recommendations}>{normalizeContent(report.recommendations)}</ReportSectionCard> : null;
       case "references":
         return <ReferencesList references={Array.isArray(report.references) ? report.references : []} title={t.references} />;
       default:

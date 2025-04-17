@@ -11,9 +11,10 @@ import SearchResultFilterBar from "./search-result-filter-bar";
 
 interface SearchResultsProps {
   results: SearchResult[]
-  onResultSelect: (result: SearchResult, isSelected: boolean) => void
+  onResultSelectAction: (result: SearchResult, isSelected: boolean) => void
   selectedResults: SearchResult[]
   onBatchSelect?: (results: SearchResult[], isSelected: boolean) => void
+  hasSearched?: boolean
 }
 
 const typeIconMap = {
@@ -30,7 +31,7 @@ const typeIconMap = {
   other: <FileText className="h-4 w-4 text-gray-400" aria-label="Other" />,
 } as const;
 
-export default function SearchResults({ results, onResultSelect, selectedResults, onBatchSelect }: SearchResultsProps) {
+export default function SearchResults({ results, onResultSelectAction, selectedResults, onBatchSelect, hasSearched = false }: SearchResultsProps) {
   // Ubah batas maksimal pilihan menjadi 10
   const maxSelected = 10
   const [filter, setFilter] = useState<string>("all")
@@ -52,7 +53,7 @@ export default function SearchResults({ results, onResultSelect, selectedResults
       onBatchSelect(items, isSelected)
     } else {
       // fallback: panggil satu per satu
-      items.forEach(r => onResultSelect(r, isSelected))
+      items.forEach(r => onResultSelectAction(r, isSelected))
     }
   }
 
@@ -146,14 +147,18 @@ export default function SearchResults({ results, onResultSelect, selectedResults
   // Batasi pemilihan hasil search
   const canSelectMore = selectedResults.length < maxSelected
 
-  // Jangan render filter & aksi jika tidak ada hasil
+  // Jangan render filter & hasil jika belum ada hasil search
   if (!results || results.length === 0) {
-    return (
-      <div className="w-full flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-        <div className="text-2xl font-semibold mb-2">Tidak ada hasil ditemukan</div>
-        <div className="text-sm">Coba perbaiki kata kunci, filter, atau gunakan rentang waktu yang berbeda.</div>
-      </div>
-    );
+    if (hasSearched) {
+      return (
+        <div className="w-full flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+          <div className="text-2xl font-semibold mb-2">Tidak ada hasil ditemukan</div>
+          <div className="text-sm">Coba perbaiki kata kunci, filter, atau gunakan rentang waktu yang berbeda.</div>
+        </div>
+      );
+    } else {
+      return null;
+    }
   }
 
   return (
@@ -184,7 +189,7 @@ export default function SearchResults({ results, onResultSelect, selectedResults
             disabled={disabled}
             maxSelected={maxSelected}
             canSelectMore={canSelectMore}
-            onResultSelect={onResultSelect}
+            onResultSelect={onResultSelectAction}
             highlight={highlight}
           />
         )

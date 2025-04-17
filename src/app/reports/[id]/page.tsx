@@ -12,19 +12,28 @@ import { Report, ReportDownloadParams, BlobDownloadParams } from "@/types/report
 import { toast } from "sonner"
 import { fetchWithTimeout, getErrorMessage } from "@/lib/utils"
 import Link from "next/link"
+import { useDocumentMeta } from '@/hooks/use-document-meta'
+import { formatTitle, DEFAULT_DESCRIPTION } from '@/lib/metadata'
 
 export default function ReportPage() {
   const params = useParams()
   const reportId = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : undefined
   const [report, setReport] = useState<Report | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isGeneratingFile, setIsGeneratingFile] = useState(false)
+  const [fetched, setFetched] = useState(false)
+
+  // Title dinamis: gunakan judul report jika ada, fallback ke 'Laporan - NextMind'
+  const [metaTitle, setMetaTitle] = useState<string>(formatTitle('Laporan'))
+  const [metaDesc, setMetaDesc] = useState<string>(DEFAULT_DESCRIPTION)
+
+  useDocumentMeta(metaTitle, metaDesc)
 
   useEffect(() => {
     const fetchReportData = async () => {
       if (!reportId) {
         toast.error("Error", { description: "Invalid or missing report ID." })
-        setIsLoading(false)
+        setFetched(true)
+        setMetaTitle(formatTitle('Laporan Tidak Ditemukan'))
         return
       }
       try {
@@ -36,7 +45,14 @@ export default function ReportPage() {
         const data = await response.json()
         // Karena API sekarang mengembalikan objek report langsung, bukan { report: ... }
         setReport(data)
-        setIsLoading(false)
+        setFetched(true)
+        // Jika report valid, update title dan description secara lebih informatif
+        if (data && data.title) {
+          setMetaTitle(formatTitle(`${data.title} - Laporan Riset - NextMind`))
+        } else {
+          setMetaTitle(formatTitle('Laporan Tidak Ditemukan - NextMind'))
+        }
+        if (data && data.summary) setMetaDesc(data.summary)
       } catch (error: unknown) {
         if (error instanceof Error) {
           if (error.name === "AbortError") {
@@ -47,7 +63,8 @@ export default function ReportPage() {
         } else {
           toast.error("Error", { description: "Gagal mengambil data report (unknown error)." })
         }
-        setIsLoading(false)
+        setFetched(true)
+        setMetaTitle(formatTitle('Laporan Tidak Ditemukan - NextMind'))
       }
     }
     fetchReportData()
@@ -126,100 +143,86 @@ export default function ReportPage() {
     return (report.title ?? "untitled").replace(/[^a-z0-9]/gi, "_").toLowerCase()
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] w-full">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    )
-  }
-
-  if (!isValidReport(report)) {
-    return (
-      <div className="container mx-auto py-16 flex flex-col items-center gap-4">
-        <div className="text-2xl font-semibold text-center text-muted-foreground">
-          Report tidak ditemukan atau gagal dimuat.
-        </div>
-        <Button asChild variant="outline" size="sm">
+  return (
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
+      <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full bg-card border border-border p-4 rounded-xl shadow-md">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+        >
           <Link href="/reports">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Kembali ke Laporan
           </Link>
         </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="sm"
+              disabled={isGeneratingFile}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              {isGeneratingFile ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Unduh
+                </>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-48 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg"
+          >
+            <DropdownMenuItem
+              onClick={handleDownloadMarkdown}
+              className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Markdown (.md)
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleDownloadWord}
+              className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Word (.docx)
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleDownloadPdf}
+              className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <FileImage className="mr-2 h-4 w-4" />
+              PDF (.pdf)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    )
-  }
 
-  const language = report.language || "en"
-  const backToReportsText = language === "id" ? "Kembali ke Laporan" : "Back to Reports"
-  const downloadText = language === "id" ? "Unduh" : "Download"
-
-  return (
-<div className="container mx-auto py-8 px-4 max-w-7xl">
-  <div className="flex flex-row justify-between items-center mb-8 gap-4 w-full bg-card border border-border p-4 rounded-xl shadow-md">
-    <Button
-      asChild
-      variant="outline"
-      size="sm"
-      className="text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
-    >
-      <Link href="/reports">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        {backToReportsText}
-      </Link>
-    </Button>
-
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          size="sm"
-          disabled={isGeneratingFile}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          {isGeneratingFile ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {language === "id" ? "Memproses..." : "Processing..."}
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              {downloadText}
-            </>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="w-48 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg"
-      >
-        <DropdownMenuItem
-          onClick={handleDownloadMarkdown}
-          className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <FileText className="mr-2 h-4 w-4" />
-          Markdown (.md)
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={handleDownloadWord}
-          className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <FileText className="mr-2 h-4 w-4" />
-          Word (.docx)
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={handleDownloadPdf}
-          className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <FileImage className="mr-2 h-4 w-4" />
-          PDF (.pdf)
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  </div>
-
-  <ReportViewer report={report} />
-</div>
+      {/* SKELETON LOADER diganti dengan SPINNER agar konsisten dengan loading.tsx */}
+      {!fetched && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-background/80">
+          <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      {report && isValidReport(report) ? (
+        <ReportViewer report={report} />
+      ) : fetched ? (
+        <div className="text-center text-destructive font-semibold py-20">
+          {(typeof window !== 'undefined' && (navigator.language === 'id' || navigator.language.startsWith('id')))
+            ? "Laporan tidak ditemukan atau rusak."
+            : "Report not found or corrupted."}
+        </div>
+      ) : null}
+    </div>
   )
 }
 

@@ -6,13 +6,14 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import Navbar from "@/components/layout/navbar"
 import Footer from "@/components/layout/footer"
+import { MAIN_TITLE, DEFAULT_DESCRIPTION } from '@/lib/metadata'
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://nextmind.oldsoul.id/"),
-  title: "NextMind - Deep Research",
-  description: "Platform AI untuk generate laporan riset mendalam, analisis kritis, dan tinjauan literatur secara otomatis. Cocok untuk mahasiswa, dosen, dan profesional riset. Hasil format JSON, SEO-ready.",
+  title: MAIN_TITLE,
+  description: DEFAULT_DESCRIPTION,
   generator: 'v0.dev',
   keywords: [
     "AI research report",
@@ -30,8 +31,8 @@ export const metadata: Metadata = {
     "DEEP RESEARCH platform"
   ],
   openGraph: {
-    title: "NextMind - Deep Research",
-    description: "Platform AI untuk generate laporan riset mendalam dan analisis literatur otomatis.",
+    title: MAIN_TITLE,
+    description: DEFAULT_DESCRIPTION,
     url: "https://nextmind.oldsoul.id/",
     siteName: "NextMind - Deep Research",
     images: [
@@ -47,8 +48,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "NextMind - Deep Research",
-    description: "Platform AI untuk generate laporan riset mendalam dan analisis literatur otomatis.",
+    title: MAIN_TITLE,
+    description: DEFAULT_DESCRIPTION,
     images: ["/og-image.png"]
   }
 }

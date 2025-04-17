@@ -7,7 +7,7 @@ export async function getReport(reportId: string): Promise<Report> {
     throw new Error(errorData.message || "Failed to fetch report")
   }
   const data = await response.json()
-  return data.report
+  return data
 }
 
 export async function getReports(): Promise<Report[]> {
