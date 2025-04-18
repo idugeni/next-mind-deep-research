@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.2] - 2025-04-18
+
+### Changed
+- Penyelarasan versi Next.js, TypeScript, dan Tailwind CSS pada README dan badge agar konsisten dengan package.json.
+- Pengelompokan dan penataan ulang badge menjadi beberapa kategori (Utama, Status & Community, Quality & Tech, Motivasi & Open Source) dengan style flat dan tampilan kecil.
+- Penambahan/memperbaiki SVG wave divider dan elemen visual untuk mempercantik README.
+- Semua perintah kode pada README kini dikemas dalam tag <pre><code>...</code></pre> agar mudah dicopy dan konsisten.
+- Seluruh padding pada section README dihapus dan diganti dengan margin untuk konsistensi jarak antar section.
+
+### Removed
+- Menghapus badge motivasi duplikat agar tidak tampil ganda.
+
 ## [2.0.0] - 2025-04-18
 
 ### Added
