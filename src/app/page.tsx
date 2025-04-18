@@ -36,6 +36,12 @@ export default function Home() {
 
   const [useBackendApiKey, setUseBackendApiKey] = useState<boolean | undefined>(undefined)
 
+  // Tambahkan state untuk menandai apakah user sudah melakukan pencarian
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // State untuk error pencarian (misal quota exceeded)
+  const [searchError, setSearchError] = useState<string | null>(null);
+
   // Fetch config hanya untuk set useBackendApiKey, tidak pernah reset apiKey
   useEffect(() => {
     fetch('/api/config')
@@ -60,6 +66,23 @@ export default function Home() {
 
   // Wrapper agar selalu dapat apiKey terbaru
   const handleGenerateReportWithKey = () => handleGenerateReport(apiKey, useBackendApiKey);
+
+  // Handler untuk pencarian selesai
+  const handleSearchCompleteWithMark = (results: import("@/types/search").SearchResult[], query: string) => {
+    handleSearchComplete(results, query);
+    setHasSearched(!!query && query.trim().length > 0);
+    setSearchError(null); // reset error jika pencarian berhasil
+  };
+  // Handler untuk reset pencarian
+  const handleResetSearch = () => {
+    setHasSearched(false);
+    handleSearchComplete([], "");
+    setSearchError(null); // reset error jika reset
+  };
+  // Handler jika terjadi error pencarian (misal quota exceeded)
+  const handleSearchError = (msg: string) => {
+    setSearchError(msg);
+  };
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
@@ -130,7 +153,7 @@ export default function Home() {
           </div>
         </div>
       )}
-      <SearchSection onSearchCompleteAction={handleSearchComplete} />
+      <SearchSection onSearchCompleteAction={handleSearchCompleteWithMark} onSearchStarted={() => setHasSearched(true)} onResetSearch={handleResetSearch} onSearchError={handleSearchError} />
       <div className="mt-4">
         {searchResults.length > 0 && (
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
@@ -148,12 +171,13 @@ export default function Home() {
             </div>
           </div>
         )}
-        {/* Fallback moved to SearchResults */}
         <SearchResults
           results={searchResults}
           selectedResults={selectedResults}
           onResultSelectAction={handleResultSelect}
           onBatchSelect={handleBatchSelect}
+          hasSearched={hasSearched}
+          searchError={searchError}
         />
       </div>
       {searchResults.length === 0 && selectedResults.length === 0 && <FeaturesSection />}

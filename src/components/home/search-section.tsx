@@ -12,9 +12,12 @@ import { subDays, subHours, format as formatDate } from "date-fns";
 
 interface SearchSectionProps {
   onSearchCompleteAction: (results: SearchResult[], query: string) => void
+  onSearchStarted?: () => void
+  onResetSearch?: () => void
+  onSearchError?: (msg: string) => void
 }
 
-export default function SearchSection({ onSearchCompleteAction }: SearchSectionProps) {
+export default function SearchSection({ onSearchCompleteAction, onSearchStarted, onResetSearch, onSearchError }: SearchSectionProps) {
   const [isSearching, setIsSearching] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<SearchLanguage>("id")
   const [hasResult, setHasResult] = useState(false)
@@ -58,14 +61,33 @@ export default function SearchSection({ onSearchCompleteAction }: SearchSectionP
       return;
     }
 
+    if (onSearchStarted) onSearchStarted();
     setIsSearching(true);
 
     try {
       const response = await fetch(`/api/search?q=${encodeURIComponent(fullQuery)}&language=${selectedLanguage}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to search");
+        let errorMessage = "Failed to search";
+        try {
+          const errorData = await response.json();
+          // Fallback khusus jika quota exceeded
+          if (
+            response.status === 500 &&
+            errorData?.message &&
+            errorData.message.includes("Quota exceeded for quota metric")
+          ) {
+            toast.error("Kuota harian Google Custom Search sudah habis.", {
+              description: "Silakan coba lagi besok atau hubungi admin untuk upgrade kuota.",
+              action: { label: "OK", onClick: () => {} }
+            });
+            if (onSearchError) onSearchError("quota");
+            return;
+          }
+          errorMessage = errorData.message || errorMessage;
+        } catch {}
+        if (onSearchError) onSearchError(errorMessage);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -98,6 +120,7 @@ export default function SearchSection({ onSearchCompleteAction }: SearchSectionP
       domain: "",
       safeSearch: false,
     })
+    if (onResetSearch) onResetSearch();
   }
 
   return (

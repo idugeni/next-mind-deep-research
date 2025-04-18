@@ -14,6 +14,8 @@ interface SearchResultsProps {
   onResultSelectAction: (result: SearchResult, isSelected: boolean) => void
   selectedResults: SearchResult[]
   onBatchSelect?: (results: SearchResult[], isSelected: boolean) => void
+  hasSearched?: boolean
+  searchError?: string | null
 }
 
 const typeIconMap = {
@@ -30,7 +32,7 @@ const typeIconMap = {
   other: <FileText className="h-4 w-4 text-gray-400" aria-label="Other" />,
 } as const;
 
-export default function SearchResults({ results, onResultSelectAction, selectedResults, onBatchSelect }: SearchResultsProps) {
+export default function SearchResults({ results, onResultSelectAction, selectedResults, onBatchSelect, hasSearched, searchError }: SearchResultsProps) {
   // Ubah batas maksimal pilihan menjadi 10
   const maxSelected = 10
   const [filter, setFilter] = useState<string>("all")
@@ -166,14 +168,36 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
   // Batasi pemilihan hasil search
   const canSelectMore = selectedResults.length < maxSelected
 
+  // Jika error quota exceeded, tampilkan fallback khusus
+  if (searchError === 'quota') {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-12 text-center text-destructive">
+        <div className="text-2xl font-semibold mb-2">Kuota harian Google Custom Search sudah habis</div>
+        <div className="text-sm">Silakan coba lagi besok atau hubungi admin untuk upgrade kuota.</div>
+      </div>
+    );
+  }
+  // Jika error lain, tampilkan error generic
+  if (searchError && searchError !== 'quota') {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-12 text-center text-destructive">
+        <div className="text-2xl font-semibold mb-2">Terjadi kesalahan saat pencarian</div>
+        <div className="text-sm">{searchError}</div>
+      </div>
+    );
+  }
   // Jangan render filter & hasil jika belum ada hasil search
-  if (!results || results.length === 0) {
+  if (hasSearched && (!results || results.length === 0)) {
     return (
       <div className="w-full flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
         <div className="text-2xl font-semibold mb-2">Tidak ada hasil ditemukan</div>
         <div className="text-sm">Coba perbaiki kata kunci, filter, atau gunakan rentang waktu yang berbeda.</div>
       </div>
     );
+  }
+  // Jika belum pernah search, jangan tampilkan pesan apapun
+  if (!hasSearched && (!results || results.length === 0)) {
+    return null;
   }
 
   return (
