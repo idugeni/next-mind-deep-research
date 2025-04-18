@@ -9,18 +9,22 @@
 
 # production
 /build
+/dist
 
 # turbo
 .turbo
+.turbo/
 
-# debug
+# debug & logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
+*.log
 
 # env files
 .env*
+*.local
 
 # vercel
 .vercel
@@ -28,5 +32,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-certificates
-mkcert
+
+# test coverage & results
+/coverage
+*.test-results.xml
+
+# editor & system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# cache
+.cache/
+.eslintcache
+.swc/
+
+# dev certificates
+certificates/
+mkcert/
