@@ -11,10 +11,10 @@ import { getErrorMessage } from "@/lib/utils"
 import { subDays, subHours, format as formatDate } from "date-fns";
 
 interface SearchSectionProps {
-  onSearchComplete: (results: SearchResult[], query: string) => void
+  onSearchCompleteAction: (results: SearchResult[], query: string) => void
 }
 
-export default function SearchSection({ onSearchComplete }: SearchSectionProps) {
+export default function SearchSection({ onSearchCompleteAction }: SearchSectionProps) {
   const [isSearching, setIsSearching] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState<SearchLanguage>("id")
   const [hasResult, setHasResult] = useState(false)
@@ -76,7 +76,7 @@ export default function SearchSection({ onSearchComplete }: SearchSectionProps) 
           action: { label: "OK", onClick: () => {} }
         });
       }
-      onSearchComplete(data.items || [], query);
+      onSearchCompleteAction(data.items || [], query);
       setHasResult(!!(data.items && data.items.length > 0));
     } catch (error) {
       toast.error("Error", {
@@ -88,7 +88,7 @@ export default function SearchSection({ onSearchComplete }: SearchSectionProps) 
   };
 
   const handleReset = () => {
-    onSearchComplete([], "")
+    onSearchCompleteAction([], "")
     setHasResult(false)
     // Reset filter juga ke default
     setFilterState({

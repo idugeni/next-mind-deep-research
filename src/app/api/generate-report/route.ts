@@ -2,8 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { rateLimit } from "@/lib/rate-limiter"
 import { fetchUrlContent } from "@/lib/fetch-content"
 import { generateReportWithGemini } from "@/lib/gemini"
-import { saveReport } from "@/lib/reports-store"
+import { saveReport, getReportById } from "@/lib/reports-store"
 import { DEFAULT_MODEL_ID } from "@/constants/models"
+import redis from "@/lib/redis"
+import { REPORTS_LIST_KEY } from "@/constants/redis-keys"
+
+const useBackendApiKey = process.env.USE_BACKEND_API_KEY === 'true'
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json()
-    const { query, selectedResults, model, language } = body
+    const { query, selectedResults, model, language, apiKey } = body
 
     if (!query || !selectedResults || !Array.isArray(selectedResults) || selectedResults.length === 0) {
       return NextResponse.json({ message: "Invalid request data" }, { status: 400 })
@@ -49,6 +53,14 @@ export async function POST(request: NextRequest) {
 
     if (model && !validModels.includes(model)) {
       return NextResponse.json({ message: "Invalid model specified" }, { status: 400 })
+    }
+
+    // Pilih API key sesuai mode
+    const geminiApiKey = useBackendApiKey
+      ? process.env.GEMINI_API_KEY
+      : apiKey;
+    if (!geminiApiKey || geminiApiKey.trim().length < 20) {
+      return NextResponse.json({ message: "Gemini API key is not configured" }, { status: 400 });
     }
 
     // Fetch content from selected URLs
@@ -92,11 +104,30 @@ Title: ${result.title || "No title available"}`,
       query,
       resultsWithContent,
       model || DEFAULT_MODEL_ID,
-      language
+      language,
+      geminiApiKey // gunakan key hasil seleksi
     )
 
-    // Save the report
+    // Simpan report ke database
     const savedReport = await saveReport(report)
+
+    // Pastikan report benar-benar sudah tersimpan dan bisa diambil, dan ID sudah masuk list (hindari race condition Redis)
+    let persistedReport = null
+    let idInList = false
+    let retry = 0
+    const maxRetries = 10
+    const retryDelayMs = 100
+    while (retry < maxRetries) {
+      persistedReport = await getReportById(report.id)
+      const reportIds = await redis.lrange(REPORTS_LIST_KEY, 0, -1)
+      idInList = reportIds.includes(report.id)
+      if (persistedReport && idInList) break
+      await new Promise(res => setTimeout(res, retryDelayMs))
+      retry++
+    }
+    if (!persistedReport || !idInList) {
+      return NextResponse.json({ message: "Report failed to persist. Please try again." }, { status: 500 })
+    }
 
     return NextResponse.json(
       {

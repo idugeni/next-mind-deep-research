@@ -32,10 +32,11 @@ export async function saveReport(report: Report): Promise<Report> {
     // Ensure we're storing a JSON string
     const reportJson = typeof report === "string" ? report : JSON.stringify(report)
 
-    // Save the report
+    // Save the report (overwrite if exists)
     await redis.set(`${REPORT_PREFIX}${report.id}`, reportJson)
 
-    // Add the report ID to the list
+    // Remove existing ID if present, then add to front (to avoid duplicates)
+    await redis.lrem(REPORTS_LIST_KEY, 0, report.id)
     await redis.lpush(REPORTS_LIST_KEY, report.id)
 
     // Trim the list to keep only the most recent reports

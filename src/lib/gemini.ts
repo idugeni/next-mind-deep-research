@@ -1,6 +1,9 @@
 import { Report } from "@/types/report"
 import indonesianWords from "./lang/indonesian-words";
 
+// Tambahkan config untuk membaca env
+const useBackendApiKey = process.env.USE_BACKEND_API_KEY === "true";
+
 interface SourceWithContent {
   title: string
   link: string
@@ -52,9 +55,16 @@ export async function generateReportWithGemini(
   query: string,
   sources: SourceWithContent[],
   model: string,
-  language?: string
+  language?: string,
+  apiKeyFromInput?: string // Tambahkan opsional API key dari frontend
 ): Promise<Report> {
-  const apiKey = process.env.GEMINI_API_KEY
+  // Pilih sumber API key sesuai opsi
+  let apiKey: string | undefined;
+  if (useBackendApiKey) {
+    apiKey = process.env.GEMINI_API_KEY;
+  } else {
+    apiKey = apiKeyFromInput;
+  }
 
   if (!apiKey) {
     throw new Error("Gemini API key is not configured")

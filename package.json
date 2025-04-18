@@ -1,6 +1,6 @@
 {
   "name": "next-mind-deep-research",
-  "version": "2.0.0",
+  "version": "2.1.2",
   "private": true,
   "description": "A Next.js-based research platform for deep mind exploration.",
   "author": "Eliyanto Sarage <officialelsa21@gmail.com>",
@@ -87,7 +87,7 @@
     "react-hook-form": "^7.55.0",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
-    "recharts": "^2.15.2",
+    "recharts": "^2.15.3",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",

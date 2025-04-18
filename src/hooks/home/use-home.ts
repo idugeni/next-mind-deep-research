@@ -18,11 +18,13 @@ type UseHomeReturn = {
   setSelectedLanguage: (language: SearchLanguage) => void
   handleSearchComplete: (results: SearchResult[], query: string) => void
   handleResultSelect: (result: SearchResult, isSelected: boolean) => void
-  handleGenerateReport: () => void
+  handleGenerateReport: (apiKeyFromPage?: string, useBackendApiKey?: boolean) => void
   setSelectedModel: (model: string) => void
   setSearchResults: (results: SearchResult[]) => void
   setSelectedResults: (results: SearchResult[]) => void
   handleBatchSelect: (results: SearchResult[], isSelected: boolean) => void
+  apiKey: string
+  setApiKey: (value: string) => void
 }
 
 export function useHome(): UseHomeReturn {
@@ -31,6 +33,7 @@ export function useHome(): UseHomeReturn {
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL_ID)
   const [selectedLanguage, setSelectedLanguage] = useState<SearchLanguage>("id")
+  const [apiKey, setApiKeyState] = useState<string>("");
   const router = useRouter()
 
   // Gunakan custom hook untuk seleksi hasil
@@ -54,50 +57,42 @@ export function useHome(): UseHomeReturn {
   const handleResultSelectMemo = useCallback(handleResultSelect, [handleResultSelect])
   const handleBatchSelectMemo = useCallback(handleBatchSelect, [handleBatchSelect])
 
-  const handleGenerateReport = useCallback(async () => {
-    if (!searchQuery || selectedResults.length === 0) {
-      toast.error("Pilih minimal satu hasil pencarian untuk membuat laporan.")
-      return
-    }
-    const incomplete = selectedResults.some(r => !r.title || !r.link || !r.snippet)
-    if (incomplete) {
-      toast.error("Beberapa hasil yang dipilih tidak memiliki data lengkap. Silakan pilih hasil yang valid.")
-      return
+  // Saat klik generate report, pastikan apiKey dari page.tsx diteruskan ke useHome
+  const handleGenerateReport = useCallback(async (apiKeyFromPage?: string, useBackendApiKeyArg?: boolean) => {
+    const body: Record<string, unknown> = {
+      query: searchQuery,
+      selectedResults,
+      model: selectedModel,
+      language: selectedLanguage,
+    };
+    // Kirim apiKey dari parameter jika backend membutuhkannya
+    if (useBackendApiKeyArg === false && apiKeyFromPage) {
+      body.apiKey = apiKeyFromPage;
     }
     setIsGenerating(true)
     try {
-      const response = await fetch("/api/generate-report", {
+      const res = await fetch("/api/generate-report", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: searchQuery,
-          selectedResults,
-          model: selectedModel,
-          language: selectedLanguage,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       })
-      if (response.status === 429) {
-        const errorData = await response.json()
-        toast.error("Terlalu sering generate laporan. Silakan coba lagi nanti.", {
-          description: errorData.message + (errorData.reset ? ` (Coba lagi dalam ${Math.ceil((errorData.reset - Date.now())/1000)} detik)` : "")
-        })
-        return
+      if (!res.ok) {
+        throw new Error(await res.text())
       }
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Gagal membuat laporan.")
-      }
-      const data = await response.json()
+      const data = await res.json()
       toast.success("Laporan berhasil dibuat!", { description: "Anda akan diarahkan ke halaman laporan." })
       setTimeout(() => router.push(`/reports/${data.reportId}`), 1000)
-    } catch (error) {
-      toast.error("Terjadi error saat generate laporan", { description: getErrorMessage(error) })
+    } catch (e) {
+      toast.error(getErrorMessage(e))
     } finally {
       setIsGenerating(false)
     }
   }, [searchQuery, selectedResults, selectedModel, selectedLanguage, router])
+
+  // Setter apiKey agar bisa dipanggil dari komponen luar
+  const setApiKey = (value: string) => {
+    setApiKeyState(value)
+  }
 
   return {
     searchResults: categorizedResults, // gunakan hasil memoized jika perlu
@@ -113,5 +108,7 @@ export function useHome(): UseHomeReturn {
     setSearchResults,
     setSelectedResults,
     handleBatchSelect: handleBatchSelectMemo,
+    apiKey,
+    setApiKey,
   }
 }

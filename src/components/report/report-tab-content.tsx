@@ -61,7 +61,16 @@ export default function ReportTabContent({ tabList, report, t, activeTab }: Repo
 
   // Helper to normalize string or string[] to string, trim, and remove extra blank lines, then convert to HTML
   function normalizeContent(content: string | string[] | undefined | null): string {
-    let str = Array.isArray(content) ? content.join("\n\n") : (content ?? "");
+    let str: string;
+    if (Array.isArray(content)) {
+      str = content.join("\n\n");
+    } else if (typeof content === "string") {
+      str = content;
+    } else if (content == null) {
+      str = "";
+    } else {
+      str = String(content); // fallback untuk tipe selain string/array/null/undefined
+    }
     str = str.replace(/^[\s\n]+|[\s\n]+$/g, '').replace(/\n{3,}/g, '\n\n');
     return textToHtml(str);
   }
