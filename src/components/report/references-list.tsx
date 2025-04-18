@@ -14,30 +14,32 @@ export default function ReferencesList({ references, title }: ReferencesListProp
       <CardContent className="pt-0 px-0 md:px-0 pb-2 mt-0">
         <ul className="list-disc pl-5 space-y-2">
           {references.map((reference, index) => {
-            // Deteksi URL dalam format (URL: ...)
-            const urlPattern = /\(URL: (https?:\/\/[^)]+)\)/;
-            const urlMatch = reference.match(urlPattern);
-            const url = urlMatch ? urlMatch[1] : null;
-            let refTitle = reference.trim();
-            // Jika ada (URL: ...), tampilkan bagian sebelum (URL: ...)
-            if (urlMatch) {
-              refTitle = reference.split(urlPattern)[0].replace(/[:\s]+$/, '').trim();
+            // Parsing: Sumber n: Judul (url)
+            const refPattern = /^Sumber (\d+):\s*(.*?)\s*\((https?:\/\/[^)]+)\)$/;
+            const match = reference.match(refPattern);
+            let refTitle = reference;
+            let refUrl = null;
+            let sumberNo: string = (index + 1).toString();
+            if (match) {
+              sumberNo = match[1];
+              refTitle = match[2].trim();
+              refUrl = match[3].trim();
+            } else {
+              // Fallback: deteksi url di string (tanpa format)
+              const urlMatch = reference.match(/(https?:\/\/[^\s)]+)/);
+              if (urlMatch) {
+                refTitle = reference.replace(urlMatch[0], '').replace(/[()]/g, '').replace(/^Sumber \d+:/, '').trim();
+                refUrl = urlMatch[0];
+                if (!refTitle) refTitle = refUrl;
+              }
             }
-            // Jika tidak ada (URL: ...), deteksi url biasa untuk hyperlink
-            const fallbackUrlMatch = !url && reference.match(/(https?:\/\/[^\s]+)/);
-            const cleanUrl = url || (fallbackUrlMatch ? fallbackUrlMatch[0].replace(/[)]+$/, '') : null);
-            // Hilangkan trailing ... pada judul referensi
-            let cleanRefTitle = refTitle.replace(/\.\.\.$/, '').trim();
-            // Jika judul jadi kosong setelah dihilangkan, fallback ke url
-            if (!cleanRefTitle) cleanRefTitle = cleanUrl || '';
             return (
               <li key={index} className="text-sm text-muted-foreground leading-relaxed">
-                {cleanRefTitle}
-                {cleanUrl && (
-                  <>
-                    {' '}
-                    (<a href={cleanUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all">{cleanUrl}</a>)
-                  </>
+                <span className="font-semibold mr-1">Sumber {sumberNo}:</span>
+                {refUrl ? (
+                  <a href={refUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all">{refTitle}</a>
+                ) : (
+                  refTitle
                 )}
               </li>
             )

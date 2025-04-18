@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { File, FileText, Image, Video, Globe, MapPin, Newspaper, Users } from "lucide-react"
 import { SearchResult } from "@/types/search"
 import { toast } from "sonner"
@@ -14,7 +14,6 @@ interface SearchResultsProps {
   onResultSelectAction: (result: SearchResult, isSelected: boolean) => void
   selectedResults: SearchResult[]
   onBatchSelect?: (results: SearchResult[], isSelected: boolean) => void
-  hasSearched?: boolean
 }
 
 const typeIconMap = {
@@ -31,7 +30,7 @@ const typeIconMap = {
   other: <FileText className="h-4 w-4 text-gray-400" aria-label="Other" />,
 } as const;
 
-export default function SearchResults({ results, onResultSelectAction, selectedResults, onBatchSelect, hasSearched = false }: SearchResultsProps) {
+export default function SearchResults({ results, onResultSelectAction, selectedResults, onBatchSelect }: SearchResultsProps) {
   // Ubah batas maksimal pilihan menjadi 10
   const maxSelected = 10
   const [filter, setFilter] = useState<string>("all")
@@ -44,8 +43,28 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
 
   // Filter hasil sesuai kategori
   const filteredResults = useMemo<SearchResult[]>(() => {
-    return filter === "all" ? results : results.filter((r: SearchResult) => (r.type || "other") === filter)
+    // Hilangkan hasil yang judul/snippet-nya hanya berisi "..." atau diakhiri "..."
+    const clean = (s: string) => s.replace(/\s*\.\.\.$/, "").replace(/\u2026/g, "");
+    const cleanedResults = results.map(r => ({
+      ...r,
+      title: clean(r.title),
+      snippet: clean(r.snippet)
+    }));
+    return filter === "all" ? cleanedResults : cleanedResults.filter((r: SearchResult) => (r.type || "other") === filter)
   }, [results, filter])
+
+  // Pagination state
+  const [visibleCount, setVisibleCount] = useState(10);
+  // Reset visibleCount ke 10 setiap hasil search/filter berubah
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [results, filter]);
+  const totalToShow = Math.min(filteredResults.length, 50);
+  const pagedResults = filteredResults.slice(0, visibleCount);
+
+  const handleLoadMore = () => {
+    setVisibleCount(count => Math.min(count + 10, totalToShow));
+  };
 
   // Batch select/deselect logic
   const batchSelect = (items: SearchResult[], isSelected: boolean) => {
@@ -149,16 +168,12 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
 
   // Jangan render filter & hasil jika belum ada hasil search
   if (!results || results.length === 0) {
-    if (hasSearched) {
-      return (
-        <div className="w-full flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-          <div className="text-2xl font-semibold mb-2">Tidak ada hasil ditemukan</div>
-          <div className="text-sm">Coba perbaiki kata kunci, filter, atau gunakan rentang waktu yang berbeda.</div>
-        </div>
-      );
-    } else {
-      return null;
-    }
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+        <div className="text-2xl font-semibold mb-2">Tidak ada hasil ditemukan</div>
+        <div className="text-sm">Coba perbaiki kata kunci, filter, atau gunakan rentang waktu yang berbeda.</div>
+      </div>
+    );
   }
 
   return (
@@ -176,7 +191,7 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
         disableDeselectAll={selectedResults.length === 0}
         onSmartSelect={handleSmartSelect}
       />
-      {filteredResults.map((result: SearchResult, index: number) => {
+      {pagedResults.map((result: SearchResult, index: number) => {
         const icon = typeIconMap[(result.type as keyof typeof typeIconMap) ?? 'other'] ?? typeIconMap.other
         const checked = isSelected(result)
         const disabled = !checked && !canSelectMore
@@ -194,6 +209,39 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
           />
         )
       })}
+      {/* Fade shadow and floating Load More button */}
+      {visibleCount < totalToShow && (
+        <div className="relative mt-4">
+          {/* Fade shadow */}
+          <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-16 bg-gradient-to-t from-background via-background/80 to-transparent rounded-b-xl z-10 transition-all"></div>
+          {/* Floating Load More button */}
+          <div className="absolute left-0 right-0 bottom-4 flex justify-center z-20">
+            <button
+              onClick={handleLoadMore}
+              className="px-6 py-2 rounded-lg bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50 animate-fade-in-up"
+              style={{ minWidth: 140 }}
+            >
+              Load More
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Tambahkan animasi fade-in-up untuk tombol */}
+      <style jsx global>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(24px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.5s cubic-bezier(0.4,0,0.2,1);
+        }
+      `}</style>
     </div>
   )
 }

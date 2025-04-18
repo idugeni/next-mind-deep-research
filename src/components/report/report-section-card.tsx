@@ -20,9 +20,21 @@ export default function ReportSectionCard({ title, children }: ReportSectionCard
           >
             {/* Render children as HTML, ganti **text** jadi <b>text</b> jika masih ada */}
             {typeof children === 'string' ? (
-              <span dangerouslySetInnerHTML={{ __html: children.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') }} />
+              <span
+                className="text-warning"
+                dangerouslySetInnerHTML={{
+                  __html: children.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(
+                    /\[object Object\]/g,
+                    '<span class="text-warning">Bagian ini tidak memiliki hasil atau data yang dapat ditampilkan berdasarkan riset yang dilakukan.</span>'
+                  )
+                }}
+              />
             ) : (
-              children
+              typeof children === 'object' && String(children) === '[object Object]' ? (
+                <span className="text-warning">Bagian ini tidak memiliki hasil atau data yang dapat ditampilkan berdasarkan riset yang dilakukan.</span>
+              ) : (
+                children
+              )
             )}
           </div>
         </div>

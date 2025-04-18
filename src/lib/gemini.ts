@@ -76,7 +76,8 @@ export async function generateReportWithGemini(
 
   const sourcesContent = sources
     .map((source, index) => {
-      return `Sumber ${index + 1}: ${source.title} (URL: ${source.link})`
+      // Format: Sumber 1: Judul Lengkap (Link)
+      return `Sumber ${index + 1}: ${source.title} (${source.link})`;
     })
     .join("\n")
 
@@ -152,8 +153,19 @@ export async function generateReportWithGemini(
       ? reportDataRaw.report
       : reportDataRaw
 
+    // references: pastikan format: Sumber 1: Judul Lengkap (Link)
+    const references = Array.isArray(reportData.references)
+      ? reportData.references.map((ref: { title?: string; link?: string } | string, idx: number) => {
+          // Jika sudah string "Judul (url)", tetap, jika object, formatkan
+          if (typeof ref === 'string') return `Sumber ${idx + 1}: ${ref}`;
+          if (ref && typeof ref === 'object' && typeof ref.title === 'string' && typeof ref.link === 'string') {
+            return `Sumber ${idx + 1}: ${ref.title} (${ref.link})`;
+          }
+          return `Sumber ${idx + 1}: ${String(ref)}`;
+        })
+      : [];
+
     // Create the report object
-    // Urutan dan field sesuai skala prioritas yang konsisten
     const report: Report = {
       id: generateId(),
       title: reportData.title,
@@ -168,7 +180,7 @@ export async function generateReportWithGemini(
       discussion: reportData.discussion,
       conclusion: reportData.conclusion,
       recommendations: reportData.recommendations,
-      references: reportData.references,
+      references: references,
       createdAt: new Date().toISOString(),
       model,
       language: finalLanguage

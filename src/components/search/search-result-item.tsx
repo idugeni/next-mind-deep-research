@@ -1,33 +1,13 @@
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ExternalLink, Instagram } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { SearchResult } from "@/types/search";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils";
 
-// Define types for pagemap
-interface CSEImage {
-  src?: string;
-}
-interface MetaTag {
-  datePublished?: string;
-}
-interface PageMap {
-  cse_image?: CSEImage[];
-  metatags?: MetaTag[];
-  [key: string]: unknown;
-}
-
 interface SearchResultItemProps {
-  result: {
-    pagemap?: PageMap;
-    displayLink: string;
-    link: string;
-    title: string;
-    snippet: string;
-    mime?: string;
-  };
+  result: SearchResult;
   icon: React.ReactNode;
   checked: boolean;
   disabled: boolean;
@@ -35,6 +15,43 @@ interface SearchResultItemProps {
   canSelectMore: boolean;
   onResultSelect: (result: SearchResult, isSelected: boolean) => void;
   highlight: (text: string) => string;
+}
+
+// Komponen gambar hasil: tampilkan gambar jika ada, jika tidak tampilkan SVG branding "N"
+function ResultImage({ src, alt }: { src?: string; alt?: string }) {
+  const valid = src && /^https?:\/\//.test(src);
+  const [error, setError] = React.useState(false);
+  if (valid && !error) {
+    return (
+      <div className="flex items-center justify-center w-16 h-16 bg-gray-200 rounded overflow-hidden mr-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt || "Result image"}
+          width={64}
+          height={64}
+          className="object-cover w-full h-full"
+          loading="lazy"
+          onError={() => setError(true)}
+        />
+      </div>
+    );
+  }
+  // Fallback SVG dengan branding "N"
+  return (
+    <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-fuchsia-700 rounded overflow-hidden mr-4 shadow-md">
+      <svg viewBox="0 0 64 64" width="40" height="40" fill="none">
+        <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#grad)" />
+        <text x="50%" y="54%" textAnchor="middle" dominantBaseline="middle" fontSize="2.6rem" fontWeight="bold" fill="#fff" fontFamily="'Inter',sans-serif" opacity="0.92">N</text>
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#6366F1" />
+            <stop offset="1" stopColor="#A21CAF" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
 }
 
 export default function SearchResultItem({
@@ -47,80 +64,84 @@ export default function SearchResultItem({
   onResultSelect,
   highlight,
 }: SearchResultItemProps) {
+  // Helper: hapus ellipsis di depan jika setelah tanggal, JANGAN hapus di belakang
+  function cleanDescription(text: string) {
+    if (!text) return "";
+    return text.replace(/^(	*\d{1,2} (Jan|Feb|Mar|Apr|Mei|Jun|Jul|Agu|Sep|Okt|Nov|Des|January|February|March|April|May|June|July|August|September|October|November|December) \d{4}) (\.{3,}|\u2026)\s*/, "$1 ").trim();
+  }
+
+  function limitDescription(text: string, maxLength = 350) {
+    if (!text) return "";
+    if (text.length <= maxLength) return text;
+    let truncated = text.slice(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(" ");
+    if (lastSpace > 0) truncated = truncated.slice(0, lastSpace);
+    if (truncated.length < text.length) {
+      return truncated.replace(/[\s.,;:!?…]+$/, "") + "…";
+    }
+    return truncated;
+  }
+
+  const displayTitle = result.title;
+  const cleanedDescription = cleanDescription(result.snippet);
+  const displayDescription = limitDescription(cleanedDescription);
+
   return (
-    <Card className="overflow-hidden py-0 mt-4">
-      <CardContent className="p-0">
-        <div className="flex items-start p-4 gap-4">
-          <div className="pt-1">
-            <Checkbox
-              id={`result-${result.link}`}
-              checked={checked}
-              disabled={disabled}
-              onCheckedChange={(checked) => {
-                if (checked && !canSelectMore) {
-                  toast.error(getErrorMessage(`Maksimal ${maxSelected} hasil bisa dipilih.`));
-                  return;
-                }
-                onResultSelect(result, !!checked);
-              }}
-            />
-          </div>
-          {/* Thumbnail: fallback Instagram jika dari Instagram, jika tidak coba load gambar */}
-          {result.displayLink?.toLowerCase().includes("instagram.com") ? (
-            <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden bg-gradient-to-br from-pink-400 via-purple-500 to-yellow-400 flex items-center justify-center mr-2">
-              <Instagram className="w-8 h-8 text-white drop-shadow" />
-            </div>
-          ) : result.pagemap && result.pagemap.cse_image && result.pagemap.cse_image[0]?.src ? (
-            <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-100 border mr-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={result.pagemap.cse_image[0].src.replace(/^http:\/\//, "https://")}
-                alt={result.title}
-                className="object-cover w-full h-full"
-                loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                  const fallback = document.createElement("div");
-                  fallback.className = "w-16 h-16 flex items-center justify-center bg-gray-200 text-gray-400";
-                  fallback.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor' class='w-8 h-8'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l9 6 9-6' /></svg>`;
-                  (e.target as HTMLImageElement).parentElement?.appendChild(fallback);
-                }}
-              />
-            </div>
-          ) : null}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              {icon}
-              <h3 className="font-medium line-clamp-2" dangerouslySetInnerHTML={{ __html: highlight(result.title) }} />
-            </div>
-            <a
-              href={result.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-muted-foreground flex items-center hover:underline truncate mb-2"
-            >
-              {result.displayLink}
-              <ExternalLink className="ml-1 h-3 w-3" />
-            </a>
-            <p
-              className="text-sm text-muted-foreground line-clamp-2"
-              dangerouslySetInnerHTML={{ __html: highlight(result.snippet) }}
-            />
-            {/* Tipe file dan tanggal jika ada */}
-            <div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500 items-center">
-              {result.mime && (
-                <span className="px-2 py-0.5 bg-gray-100 border rounded">{result.mime}</span>
-              )}
-              {/* Tanggal jika ada di pagemap.metatags[0]["datePublished"] atau snippet */}
-              {result.pagemap && result.pagemap.metatags && result.pagemap.metatags[0]?.datePublished && (
-                <span>
-                  {new Date(result.pagemap.metatags[0].datePublished).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-          </div>
+    <Card
+      className={`flex flex-row items-center gap-4 p-4 mb-2 relative ${disabled ? "opacity-50 pointer-events-none" : ""}`}
+      tabIndex={0}
+      aria-label={displayTitle}
+      data-selected={checked}
+    >
+      <Checkbox
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={(checked) => {
+          if (checked && !canSelectMore) {
+            toast.error(getErrorMessage(`Maksimal ${maxSelected} hasil bisa dipilih.`));
+            return;
+          }
+          onResultSelect(result, !!checked);
+        }}
+        className="mr-2 mt-1"
+      />
+      <ResultImage src={result.pagemap?.cse_image?.[0]?.src} alt={displayTitle} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          {icon}
+          <a
+            href={result.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={displayTitle}
+          >
+            <span dangerouslySetInnerHTML={{ __html: highlight(displayTitle) }} />
+          </a>
         </div>
-      </CardContent>
+        <a
+          href={result.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block text-xs text-gray-400 truncate max-w-full"
+        >
+          {result.displayLink}
+          <ExternalLink className="ml-1 h-3 w-3" />
+        </a>
+        <div className="text-sm text-muted-foreground m-0">
+          <span dangerouslySetInnerHTML={{ __html: highlight(displayDescription) }} />
+        </div>
+        {/* Tipe file dan tanggal jika ada */}
+        <div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500 items-center">
+          {result.mime && (
+            <span className="border rounded px-2 py-0.5 bg-gray-100 text-gray-600">{result.mime}</span>
+          )}
+          {result.pagemap && result.pagemap.metatags && result.pagemap.metatags[0]?.datePublished && (
+            <span>
+              {new Date(result.pagemap.metatags[0].datePublished).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+      </div>
     </Card>
   );
 }

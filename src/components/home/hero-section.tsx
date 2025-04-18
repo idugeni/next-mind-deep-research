@@ -7,7 +7,7 @@ export default function HeroSection() {
     <div className="py-8 space-y-8">
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold">NextMind - Deep Research</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-xl text-muted-foreground max-w-6xl mx-auto">
           Platform penelitian cerdas yang menggabungkan kekuatan AI untuk membantu Anda menemukan, menganalisis, dan mengorganisir informasi penelitian dengan lebih efektif.
         </p>
       </div>
