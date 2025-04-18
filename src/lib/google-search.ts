@@ -41,7 +41,7 @@ export async function searchGoogle(query: string, language?: "id" | "en") {
     // Copy properti lain dari data1, tapi ganti items
     return { ...data1, items }
   } catch (error) {
-    console.error("Google Search API error:", error)
+    // Error handled by caller/frontend
     throw error
   }
 }

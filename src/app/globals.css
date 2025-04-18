@@ -140,3 +140,58 @@
     @apply cursor-default hover:cursor-pointer;
   }
 }
+
+@layer components {
+  /* Typography improvements for prose classes (used in report) */
+  .prose {
+    text-align: justify !important;
+  }
+  .prose p {
+    margin-top: 0.4em !important;
+    margin-bottom: 0.8em !important;
+    text-align: justify !important;
+    text-justify: inter-word !important;
+  }
+  .prose ul, .prose ol {
+    margin-top: 1.1em !important;
+    margin-bottom: 1.1em !important;
+    padding-left: 1.5em !important;
+  }
+  .prose ul {
+    list-style-type: disc !important;
+  }
+  .prose ol {
+    list-style-type: decimal !important;
+  }
+  .prose li {
+    margin-bottom: 0.5em !important;
+    text-align: justify !important;
+    text-justify: inter-word !important;
+  }
+  .prose blockquote {
+    margin-top: 1.2em !important;
+    margin-bottom: 1.2em !important;
+    font-style: italic !important;
+  }
+  .prose h1, .prose h2, .prose h3, .prose h4 {
+    margin-top: 1em !important;
+    margin-bottom: 0.3em !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+  }
+  .prose code {
+    background: var(--color-muted) !important;
+    color: var(--color-primary) !important;
+    border-radius: 0.3em !important;
+    padding: 0.1em 0.3em !important;
+    font-size: 1em !important;
+  }
+  .prose strong {
+    font-weight: bold !important;
+    color: var(--color-primary) !important;
+  }
+  .prose table {
+    margin-top: 1.2em !important;
+    margin-bottom: 1.2em !important;
+  }
+}

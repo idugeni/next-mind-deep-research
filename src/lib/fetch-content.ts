@@ -85,11 +85,10 @@ async function fetchWithRetry(url: string, options: FetchOptions = {}, retryCoun
     }
   } catch (error) {
     if (error instanceof AxiosError) {
-      console.error(`Fetch error for ${url}:`, error.message);
-      
+      // Error handled by caller/frontend
       if (retryCount < MAX_RETRIES) {
         const delay = RETRY_DELAY * Math.pow(2, retryCount);
-        console.log(`Retrying in ${delay}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        // Info handled by caller/frontend or logging
         await new Promise(resolve => setTimeout(resolve, delay));
         return fetchWithRetry(url, options, retryCount + 1);
       }
@@ -132,8 +131,14 @@ export async function fetchUrlContent(url: string, options: FetchOptions = {}): 
         $(`[class*='${cls}'], [id*='${cls}']`).remove();
       });
 
-      // Extract the title
-      const title = $("title").text().trim() || "Untitled Page";
+      // Extract the best title from multiple sources
+      const ogTitle = $('meta[property="og:title"]').attr("content")?.trim();
+      const twitterTitle = $('meta[name="twitter:title"]').attr("content")?.trim();
+      const htmlTitle = $("title").text().trim();
+      // Pilih judul terpanjang jika ada beberapa kandidat
+      const titleCandidates = [ogTitle, twitterTitle, htmlTitle].filter(Boolean) as string[];
+      // Jika ada beberapa kandidat, pilih yang paling panjang (biasanya paling lengkap)
+      const title = titleCandidates.length > 0 ? titleCandidates.reduce((a, b) => (b.length > a.length ? b : a)) : "Untitled Page";
 
       // Extract meta description
       const metaDescription =
@@ -206,7 +211,7 @@ export async function fetchUrlContent(url: string, options: FetchOptions = {}): 
       }
     }
   } catch (error) {
-    console.error(`Error fetching content from ${url}:`, error);
+    // Error handled by caller/frontend
     return `[Content unavailable from ${url}: ${error instanceof Error ? error.message : 'Unknown error'}]`;
   }
 }

@@ -23,13 +23,36 @@ interface ReportTabsProps {
 
 export default function ReportTabs({ tabList, tabIcons, report, t }: ReportTabsProps) {
   const [activeTab, setActiveTab] = useState("full");
+
+  // Skala prioritas tab (best practice laporan riset)
+  const tabPriority = [
+    "full",
+    "summary",
+    "introduction",
+    "literature_review",
+    "critical_appraisal",
+    "methodology",
+    "findings",
+    "analysis",
+    "discussion",
+    "conclusion",
+    "recommendations",
+    "references",
+  ];
+  // Urutkan tabList sesuai prioritas
+  const sortedTabList = [...tabList].sort((a, b) => {
+    const ia = tabPriority.indexOf(a.value);
+    const ib = tabPriority.indexOf(b.value);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList
         className="w-full flex gap-0 justify-between overflow-x-auto scroll-smooth scroll-px-4 snap-x scrollbar-hide bg-muted border border-border rounded-full shadow-md p-1 h-[48px] min-h-[48px] transition-colors duration-300"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {tabList.map((tab) => {
+        {sortedTabList.map((tab) => {
           const Icon = tabIcons[tab.value] || tabIcons["full"];
           const isActive = tab.value === activeTab;
           return (
@@ -45,7 +68,7 @@ export default function ReportTabs({ tabList, tabIcons, report, t }: ReportTabsP
                       : "bg-muted text-muted-foreground border-transparent"
                   )}
                 >
-                  <Icon className={cn("w-5 h-5", isActive ? "stroke-primary-foreground" : "stroke-muted-foreground")} />
+                  {Icon && <Icon className={cn("w-5 h-5", isActive ? "stroke-primary-foreground" : "stroke-muted-foreground")} />}
                 </TabsTrigger>
               </TooltipTrigger>
               <TooltipContent side="bottom">{tab.label}</TooltipContent>
@@ -55,7 +78,7 @@ export default function ReportTabs({ tabList, tabIcons, report, t }: ReportTabsP
       </TabsList>
       {/* Tabs Content */}
       <ReportTabContent
-        tabList={tabList}
+        tabList={sortedTabList}
         report={report}
         t={t}
         activeTab={activeTab}

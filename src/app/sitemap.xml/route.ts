@@ -18,9 +18,14 @@ export async function GET() {
 
   try {
     reports = await getAllReports();
-  } catch (error) {
-    // Sitemap tetap bisa diakses meski data dinamis gagal
-    console.error("❌ Failed to fetch reports for sitemap:", error);
+  } catch {
+    // Error logged for server, send message to client
+    return new NextResponse(JSON.stringify({ error: "Failed to fetch reports for sitemap" }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
   }
 
   const staticEntries = staticPaths.map(

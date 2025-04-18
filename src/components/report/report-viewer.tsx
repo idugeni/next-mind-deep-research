@@ -27,6 +27,8 @@ export default function ReportViewer({ report }: ReportViewerProps) {
     full: language === "id" ? "Laporan Lengkap" : "Full Report",
     summary: language === "id" ? "Ringkasan" : "Summary",
     introduction: language === "id" ? "Pendahuluan" : "Introduction",
+    literatureReview: language === "id" ? "Tinjauan Pustaka" : "Literature Review",
+    criticalAppraisal: language === "id" ? "Appraisal Kritis" : "Critical Appraisal",
     methodology: language === "id" ? "Metodologi" : "Methodology",
     findings: language === "id" ? "Temuan" : "Findings",
     analysis: language === "id" ? "Analisis" : "Analysis",
@@ -52,10 +54,13 @@ export default function ReportViewer({ report }: ReportViewerProps) {
     references: Library,
   }
 
+  // Skala prioritas urutan tab/kartu
   const tabList = [
     { value: "full", label: t.full },
     { value: "summary", label: t.summary },
     { value: "introduction", label: t.introduction },
+    ...(report.literature_review ? [{ value: "literature_review", label: t.literatureReview }] : []),
+    ...(report.critical_appraisal ? [{ value: "critical_appraisal", label: t.criticalAppraisal }] : []),
     ...(report.methodology ? [{ value: "methodology", label: t.methodology }] : []),
     ...(report.findings ? [{ value: "findings", label: t.findings }] : []),
     { value: "analysis", label: t.analysis },

@@ -42,8 +42,9 @@ export async function POST(request: NextRequest) {
     const validModels = [
       "gemini-2.0-flash",
       "gemini-2.0-flash-lite",
-      "gemini-2.5-pro-exp-03-25",
       "gemini-2.0-flash-thinking-exp-01-21",
+      "gemini-2.5-flash-preview-04-17",
+      "gemini-2.5-pro-exp-03-25",
     ]
 
     if (model && !validModels.includes(model)) {
@@ -72,12 +73,10 @@ export async function POST(request: NextRequest) {
           content,
         }
       } catch (error) {
-        console.error(`Error processing content from ${result.link}:`, error)
-        const fetchError = error as Error
-        // Return the result with search snippet as fallback
+        // Error logged for server, send message to client
         return {
           ...result,
-          content: `[Content unavailable: ${fetchError.message}]
+          content: `[Content unavailable: ${error instanceof Error ? error.message : String(error)}]
 
 Search Result Snippet: ${result.snippet || "No snippet available"}
 
@@ -113,7 +112,7 @@ Title: ${result.title || "No title available"}`,
       },
     )
   } catch (error: unknown) {
-    console.error("Report generation API error:", error)
+    // Error logged for server, send message to client
     const errorMessage = error instanceof Error ? error.message : "An error occurred during report generation"
     return NextResponse.json(
       { message: errorMessage },

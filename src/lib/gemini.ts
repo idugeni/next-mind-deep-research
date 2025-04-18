@@ -10,11 +10,42 @@ interface SourceWithContent {
 
 // Helper: Prompt Engineering Deep Research (selalu digunakan)
 function getDeepResearchPrompt(query: string, sourcesContent: string, language: string) {
+  // Skala prioritas section (best practice, konsisten backend/frontend/AI)
+  const sectionOrder = [
+    "introduction",
+    "summary",
+    "literature_review",
+    "methodology",
+    "findings",
+    "analysis",
+    "critical_appraisal",
+    "discussion",
+    "conclusion",
+    "recommendations",
+    "references"
+  ];
   if (language === "id") {
-    return `Anda adalah asisten riset ilmiah DEEP RESEARCH yang sangat teliti dan mendalam. Buat laporan penelitian dengan analisis kritis, sintesis lintas sumber, dan ulasan literatur yang komprehensif.\n\nStruktur laporan:\n1. Pendahuluan: Konteks, latar belakang, dan urgensi topik.\n2. Ringkasan Eksekutif: Temuan utama secara padat.\n3. Tinjauan Literatur: Sintesis dan perbandingan hasil penelitian atau teori dari berbagai sumber utama.\n4. Metodologi: Detail metode pencarian, seleksi sumber, pendekatan analisis, serta kelebihan dan kekurangannya.\n5. Temuan Utama: Data, fakta, insight mendalam dari sumber.\n6. Analisis Mendalam: Analisa kritis, perbandingan, highlight gap penelitian, pro-kontra, dan insight penting.\n7. Critical Appraisal: Evaluasi kualitas, bias, keterbatasan, dan validitas data/sumber/metode.\n8. Diskusi: Implikasi, relevansi, dan keterbatasan temuan.\n9. Kesimpulan: Benang merah dari seluruh analisis.\n10. Rekomendasi & Future Work: Saran penelitian lanjutan atau aplikasi praktis.\n11. Referensi: Daftar sumber ilmiah (jurnal, buku, dsb) dengan URL atau DOI.\n\nPetunjuk tambahan:\n- Bandingkan teori/temuan antar sumber.\n- Sertakan kutipan langsung jika relevan.\n- Sajikan tabel/diagram jika relevan (format teks).\n- Setiap klaim HARUS didukung referensi primer.\n- Gunakan bahasa akademik, sistematis, dan komprehensif.\n\nPENTING: Format respons HANYA sebagai objek JSON valid. JANGAN tambahkan narasi di luar JSON.\n\nTopik riset: ${query}\n\nSumber yang dapat digunakan:\n${sourcesContent}\n\nFormat JSON:\n{\n  "title": "Judul Laporan",\n  "summary": "Ringkasan eksekutif...",\n  "introduction": "Pendahuluan...",\n  "literature_review": "Tinjauan literatur...",\n  "methodology": "Metodologi...",\n  "findings": "Temuan utama...",\n  "analysis": "Analisis mendalam...",\n  "critical_appraisal": "Evaluasi kritis sumber/metode...",\n  "discussion": "Diskusi...",\n  "conclusion": "Kesimpulan...",\n  "recommendations": "Rekomendasi dan future work...",\n  "references": ["Referensi 1", "Referensi 2", ...]\n}`;
+    return `Anda adalah asisten riset ilmiah DEEP RESEARCH yang sangat teliti dan mendalam. Buat laporan penelitian dengan analisis kritis, sintesis lintas sumber, dan ulasan literatur yang komprehensif.\n\nStruktur laporan (urutkan dan isi semua jika memungkinkan):\n${sectionOrder.map((s, i) => `${i+1}. ${getSectionLabel(s, 'id')}`).join('\\n')}\n\nPetunjuk tambahan:\n- Bandingkan teori/temuan antar sumber.\n- Sertakan kutipan langsung jika relevan.\n- Sajikan tabel/diagram jika relevan (format teks).\n- Setiap klaim HARUS didukung referensi primer.\n- Gunakan bahasa akademik, sistematis, dan komprehensif.\n\nPENTING: Format respons HANYA sebagai objek JSON valid. JANGAN tambahkan narasi di luar JSON.\n\nTopik riset: ${query}\n\nSumber yang dapat digunakan:\n${sourcesContent}\n\nFormat JSON:\n{\n  "title": "Judul Laporan",\n${sectionOrder.map(s => `  "${s}": "...",`).join('\n')}\n  "references": ["Referensi 1", "Referensi 2", ...]\n}`;
   } else {
-    return `You are a DEEP RESEARCH scientific assistant. Generate a research report with critical analysis, cross-source synthesis, and comprehensive literature review.\n\nReport structure:\n1. Introduction: Context, background, and topic urgency.\n2. Executive Summary: Concise main findings.\n3. Literature Review: Synthesis and comparison of research findings or theories from key sources.\n4. Methodology: Detailed search method, source selection, analytical approach, strengths and weaknesses.\n5. Key Findings: Data, facts, deep insights from sources.\n6. In-depth Analysis: Critical analysis, comparison, research gap highlights, pros-cons, key insights.\n7. Critical Appraisal: Evaluation of quality, bias, limitations, and validity of data/sources/methods.\n8. Discussion: Implications, relevance, and limitations of findings.\n9. Conclusion: Synthesis of all analysis.\n10. Recommendations & Future Work: Suggestions for further research or practical applications.\n11. References: List of scientific sources (journals, books, etc.) with URL or DOI.\n\nAdditional instructions:\n- Compare theories/findings across sources.\n- Include direct quotes if relevant.\n- Present tables/diagrams if relevant (text format).\n- Every claim MUST be supported by a primary reference.\n- Use academic, systematic, and comprehensive language.\n\nIMPORTANT: Format the response ONLY as a valid JSON object. DO NOT add any narration outside the JSON.\n\nResearch topic: ${query}\n\nSources available:\n${sourcesContent}\n\nJSON format:\n{\n  "title": "Report Title",\n  "summary": "Executive summary...",\n  "introduction": "Introduction...",\n  "literature_review": "Literature review...",\n  "methodology": "Methodology...",\n  "findings": "Key findings...",\n  "analysis": "In-depth analysis...",\n  "critical_appraisal": "Critical appraisal of sources/methods...",\n  "discussion": "Discussion...",\n  "conclusion": "Conclusion...",\n  "recommendations": "Recommendations and future work...",\n  "references": ["Reference 1", "Reference 2", ...]\n}`;
+    return `You are a DEEP RESEARCH scientific assistant. Generate a research report with critical analysis, cross-source synthesis, and comprehensive literature review.\n\nReport structure (order and fill all if possible):\n${sectionOrder.map((s, i) => `${i+1}. ${getSectionLabel(s, 'en')}`).join('\\n')}\n\nAdditional instructions:\n- Compare theories/findings across sources.\n- Include direct quotes if relevant.\n- Present tables/diagrams if relevant (text format).\n- Every claim MUST be supported by a primary reference.\n- Use academic, systematic, and comprehensive language.\n\nIMPORTANT: Format the response ONLY as a valid JSON object. DO NOT add any narration outside the JSON.\n\nResearch topic: ${query}\n\nSources available:\n${sourcesContent}\n\nJSON format:\n{\n  "title": "Report Title",\n${sectionOrder.map(s => `  "${s}": "...",`).join('\n')}\n  "references": ["Reference 1", "Reference 2", ...]\n}`;
   }
+}
+
+function getSectionLabel(key: string, lang: 'id'|'en'): string {
+  const labels: Record<string, {id: string, en: string}> = {
+    introduction: { id: "Pendahuluan", en: "Introduction" },
+    summary: { id: "Ringkasan Eksekutif", en: "Executive Summary" },
+    literature_review: { id: "Tinjauan Literatur", en: "Literature Review" },
+    methodology: { id: "Metodologi", en: "Methodology" },
+    findings: { id: "Temuan Utama", en: "Key Findings" },
+    analysis: { id: "Analisis Mendalam", en: "In-depth Analysis" },
+    critical_appraisal: { id: "Kritik Kritis", en: "Critical Appraisal" },
+    discussion: { id: "Diskusi", en: "Discussion" },
+    conclusion: { id: "Kesimpulan", en: "Conclusion" },
+    recommendations: { id: "Rekomendasi & Future Work", en: "Recommendations & Future Work" },
+    references: { id: "Referensi", en: "References" }
+  };
+  return labels[key]?.[lang] || key;
 }
 
 export async function generateReportWithGemini(
@@ -88,7 +119,7 @@ export async function generateReportWithGemini(
       const cleaned = generatedText.replace(/,\s*\}/g, "}").replace(/,\s*\]/g, "]")
       jsonMatch = cleaned.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {
-        console.error("Gemini raw response:", generatedText)
+        // Error handled by caller/frontend
         throw new Error("Failed to extract JSON from Gemini response.\nRaw Gemini output: " + generatedText)
       }
     }
@@ -102,7 +133,7 @@ export async function generateReportWithGemini(
         const json5 = await import("json5");
         reportDataRaw = json5.parse(jsonMatch[0])
       } catch {
-        console.error("Gemini JSON parse error:\nRaw:", jsonMatch[0])
+        // Error handled by caller/frontend
         throw new Error("Failed to parse Gemini JSON.\nRaw JSON: " + jsonMatch[0])
       }
     }
@@ -112,29 +143,30 @@ export async function generateReportWithGemini(
       : reportDataRaw
 
     // Create the report object
+    // Urutan dan field sesuai skala prioritas yang konsisten
     const report: Report = {
       id: generateId(),
       title: reportData.title,
       query,
-      summary: reportData.summary,
       introduction: reportData.introduction,
+      summary: reportData.summary,
+      literature_review: reportData.literature_review,
       methodology: reportData.methodology,
       findings: reportData.findings,
       analysis: reportData.analysis,
+      critical_appraisal: reportData.critical_appraisal,
       discussion: reportData.discussion,
       conclusion: reportData.conclusion,
       recommendations: reportData.recommendations,
       references: reportData.references,
       createdAt: new Date().toISOString(),
       model,
-      language: finalLanguage,
-      literature_review: reportData.literature_review,
-      critical_appraisal: reportData.critical_appraisal,
+      language: finalLanguage
     }
 
     return report
   } catch {
-    console.error("Gemini API error:")
+    // Error handled by caller/frontend
     throw new Error("Gemini API request failed")
   }
 }

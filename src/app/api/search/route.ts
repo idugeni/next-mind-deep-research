@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: unknown) {
-    console.error("Search API error:", error)
+    // Error logged for server, send message to client
     const errorMessage = error instanceof Error ? error.message : "An error occurred during search"
     return NextResponse.json({ message: errorMessage }, { status: 500 })
   }

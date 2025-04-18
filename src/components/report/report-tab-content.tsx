@@ -10,30 +10,60 @@ interface ReportTabContentProps {
 }
 
 export default function ReportTabContent({ tabList, report, t, activeTab }: ReportTabContentProps) {
-  // Helper to convert plain text (with double space/tab) to markdown table
-  function textToMarkdownTable(text: string) {
-    const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
-    if (lines.length < 2) return text; // Not enough lines for table
-    // Assume columns separated by 2+ spaces or tab
-    const splitLine = (line: string) => line.split(/\s{2,}|\t/).map(s => s.trim());
-    const header = splitLine(lines[0]);
-    // Pastikan semua baris punya jumlah kolom sama dengan header
-    const rowsArr = lines.slice(1).map(splitLine);
-    if (!rowsArr.every(cols => cols.length === header.length)) return text; // Bukan tabel valid
-    const separator = `|${header.map(() => '---').join('|')}|`;
-    const rows = rowsArr.map(cols => `| ${cols.join(' | ')} |`);
-    return `| ${header.join(' | ')} |\n${separator}\n${rows.join('\n')}`;
+  // Helper to convert plain text (with double space/tab) or markdown to HTML
+  function textToHtml(text: string) {
+    // Try to detect if content is markdown table or markdown, convert to HTML
+    // For simplicity, use a basic converter for bold, italic, headers, lists, and tables
+    let html = text;
+    // Convert **bold**
+    html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    // Convert *italic*
+    html = html.replace(/\*(.*?)\*/g, '<i>$1</i>');
+    // Convert headers
+    html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
+    // Convert unordered lists
+    html = html.replace(/^(\s*)[-*] (.*)$/gm, '$1<li>$2</li>');
+    // Group consecutive <li> into <ul>
+    html = html.replace(/(<li>.*?<\/li>\s*)+/gs, match => `<ul>${match.replace(/\s*$/,'')}</ul>`);
+    // Convert ordered lists
+    html = html.replace(/^(\s*)[0-9]+\. (.*)$/gm, '$1<li>$2</li>');
+    // Group consecutive <li> into <ol> for ordered
+    html = html.replace(/(<li>.*?<\/li>\s*)+/gs, match => `<ol>${match.replace(/\s*$/,'')}</ol>`);
+    // Convert tables (simple)
+    if (/^\|(.+)\|$/m.test(html)) {
+      const lines = html.split('\n');
+      let inTable = false;
+      let tableHtml = '';
+      for (const line of lines) {
+        if (/^\|(.+)\|$/.test(line)) {
+          if (!inTable) { tableHtml += '<table><tbody>'; inTable = true; }
+          const cells = line.split('|').slice(1, -1).map(cell => `<td>${cell.trim()}</td>`).join('');
+          tableHtml += `<tr>${cells}</tr>`;
+        } else {
+          if (inTable) { tableHtml += '</tbody></table>'; inTable = false; }
+          tableHtml += line ? `<div>${line}</div>` : '';
+        }
+      }
+      if (inTable) tableHtml += '</tbody></table>';
+      html = tableHtml;
+    }
+    // Replace double newlines with paragraph
+    html = html.replace(/\n{2,}/g, '</p><p>');
+    html = `<p>${html}</p>`;
+    // Remove empty <p></p>
+    html = html.replace(/<p>\s*<\/p>/g, '');
+    // Remove <br> inside <ul>, <ol>, <li>, <table>, <tr>, <td>
+    html = html.replace(/<(ul|ol|li|table|tr|td)>((.|\n)*?)<\/\1>/g, (m) => m.replace(/<br\s*\/?\s*>/g, ''));
+    return html;
   }
 
-  // Helper to normalize string or string[] to string, trim, and remove extra blank lines
+  // Helper to normalize string or string[] to string, trim, and remove extra blank lines, then convert to HTML
   function normalizeContent(content: string | string[] | undefined | null): string {
     let str = Array.isArray(content) ? content.join("\n\n") : (content ?? "");
-    // Jangan konversi jika sudah markdown table (ada | di baris pertama)
-    if (!/^\s*\|.*\|.*\|/m.test(str) && /^.+(\s{2,}|\t).+$/m.test(str)) {
-      str = textToMarkdownTable(str);
-    }
-    // Trim leading/trailing whitespace dan hapus baris kosong berlebih
-    return str.replace(/^[\s\n]+|[\s\n]+$/g, '').replace(/\n{3,}/g, '\n\n');
+    str = str.replace(/^[\s\n]+|[\s\n]+$/g, '').replace(/\n{3,}/g, '\n\n');
+    return textToHtml(str);
   }
 
   // Helper untuk render konten tiap tab
@@ -46,6 +76,8 @@ export default function ReportTabContent({ tabList, report, t, activeTab }: Repo
               {normalizeContent(report.summary)}
             </ReportSectionCard>
             <ReportSectionCard title={t.introduction}>{normalizeContent(report.introduction)}</ReportSectionCard>
+            {report.literature_review && <ReportSectionCard title={t.literatureReview || "Literature Review"}>{normalizeContent(report.literature_review)}</ReportSectionCard>}
+            {report.critical_appraisal && <ReportSectionCard title={t.criticalAppraisal || "Critical Appraisal"}>{normalizeContent(report.critical_appraisal)}</ReportSectionCard>}
             {report.methodology && <ReportSectionCard title={t.methodology}>{normalizeContent(report.methodology)}</ReportSectionCard>}
             {report.findings && <ReportSectionCard title={t.findings}>{normalizeContent(report.findings)}</ReportSectionCard>}
             <ReportSectionCard title={t.analysis}>{normalizeContent(report.analysis)}</ReportSectionCard>
@@ -63,6 +95,14 @@ export default function ReportTabContent({ tabList, report, t, activeTab }: Repo
         );
       case "introduction":
         return <ReportSectionCard title={t.introduction}>{normalizeContent(report.introduction)}</ReportSectionCard>;
+      case "literature_review":
+        return report.literature_review ? (
+          <ReportSectionCard title={t.literatureReview || "Literature Review"}>{normalizeContent(report.literature_review)}</ReportSectionCard>
+        ) : null;
+      case "critical_appraisal":
+        return report.critical_appraisal ? (
+          <ReportSectionCard title={t.criticalAppraisal || "Critical Appraisal"}>{normalizeContent(report.critical_appraisal)}</ReportSectionCard>
+        ) : null;
       case "methodology":
         return report.methodology ? <ReportSectionCard title={t.methodology}>{normalizeContent(report.methodology)}</ReportSectionCard> : null;
       case "findings":

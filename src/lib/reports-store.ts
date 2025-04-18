@@ -43,7 +43,7 @@ export async function saveReport(report: Report): Promise<Report> {
 
     return report
   } catch (error) {
-    console.error("Error saving report:", error)
+    // Error handled by caller/frontend
     throw error
   }
 }
@@ -65,8 +65,8 @@ export async function getReportById(id: string): Promise<Report | null> {
         try {
           const json5 = await import("json5");
           parsed = json5.parse(reportData);
-        } catch (e) {
-          console.error("Report JSON parse error:", e, "\nRaw:", reportData)
+        } catch {
+          // Error handled by caller/frontend
           return null
         }
       }
@@ -96,14 +96,14 @@ export async function getReportById(id: string): Promise<Report | null> {
         return r as Report
       }
       // Jika tidak valid, log error
-      console.error("Report data does not conform to the Report type", parsed)
+      // Error handled by caller/frontend
       return null
     }
 
     return parsed as Report;
   } catch (error) {
-    console.error(`Error getting report ${id}:`, error)
-    return null
+    // Error handled by caller/frontend
+    throw error
   }
 }
 
@@ -123,7 +123,7 @@ export async function getAllReports(): Promise<Report[]> {
     // Filter out null reports
     return reports.filter(Boolean) as Report[]
   } catch (error) {
-    console.error("Error getting all reports:", error)
+    // Error handled by caller/frontend
     throw error
   }
 }
@@ -138,7 +138,7 @@ export async function deleteReport(id: string): Promise<boolean> {
 
     return true
   } catch (error) {
-    console.error(`Error deleting report ${id}:`, error)
+    // Error handled by caller/frontend
     throw error
   }
 }
