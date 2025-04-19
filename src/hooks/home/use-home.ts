@@ -25,6 +25,7 @@ type UseHomeReturn = {
   handleBatchSelect: (results: SearchResult[], isSelected: boolean) => void
   apiKey: string
   setApiKey: (value: string) => void
+  searchQuery: string
 }
 
 export function useHome(): UseHomeReturn {
@@ -110,5 +111,6 @@ export function useHome(): UseHomeReturn {
     handleBatchSelect: handleBatchSelectMemo,
     apiKey,
     setApiKey,
+    searchQuery,
   }
 }

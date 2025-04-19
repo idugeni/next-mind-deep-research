@@ -26,6 +26,7 @@ export default function Home() {
     handleGenerateReport,
     setSelectedModel,
     handleBatchSelect,
+    searchQuery,
   } = useHome()
 
   // Inisialisasi apiKey dari localStorage hanya sekali saat mount
@@ -80,7 +81,7 @@ export default function Home() {
     setSearchError(null); // reset error jika reset
   };
   // Handler jika terjadi error pencarian (misal quota exceeded)
-  const handleSearchError = (msg: string) => {
+  const handleSearchError = (msg: string | null) => {
     setSearchError(msg);
   };
 
@@ -155,7 +156,7 @@ export default function Home() {
       )}
       <SearchSection onSearchCompleteAction={handleSearchCompleteWithMark} onSearchStarted={() => setHasSearched(true)} onResetSearch={handleResetSearch} onSearchError={handleSearchError} />
       <div className="mt-4">
-        {searchResults.length > 0 && (
+        {searchQuery.trim() && searchResults.length > 0 && (
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
             <h2 className="text-xl font-semibold">Search Results ({searchResults.length})</h2>
             <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
@@ -171,14 +172,16 @@ export default function Home() {
             </div>
           </div>
         )}
-        <SearchResults
-          results={searchResults}
-          selectedResults={selectedResults}
-          onResultSelectAction={handleResultSelect}
-          onBatchSelect={handleBatchSelect}
-          hasSearched={hasSearched}
-          searchError={searchError}
-        />
+        {searchQuery.trim() && (
+          <SearchResults
+            results={searchResults}
+            selectedResults={selectedResults}
+            onResultSelectAction={handleResultSelect}
+            onBatchSelect={handleBatchSelect}
+            hasSearched={hasSearched}
+            searchError={searchError}
+          />
+        )}
       </div>
       {searchResults.length === 0 && selectedResults.length === 0 && <FeaturesSection />}
     </div>

@@ -39,15 +39,39 @@ export interface SearchFilterValue {
 interface SearchFilterProps {
   value: SearchFilterValue;
   onChange: (filters: SearchFilterValue) => void;
+  onReset?: () => void;
+  autoSearch?: boolean;
+  onAutoSearchChange?: (val: boolean) => void;
 }
 
-export function SearchFilter({ value, onChange }: SearchFilterProps) {
+export function SearchFilter({ value, onChange, onReset, autoSearch, onAutoSearchChange }: SearchFilterProps) {
   const [type, setType] = React.useState(value.filetype || "all");
   const [time, setTime] = React.useState(value.time || "all");
   const [customDateRange, setCustomDateRange] = React.useState<{ start?: Date; end?: Date }>(value.customDateRange || {});
   const [domain, setDomain] = React.useState(value.domain || "");
   const [safeSearch, setSafeSearch] = React.useState(value.safeSearch || false);
   const [showDatePopover, setShowDatePopover] = React.useState(false);
+
+  // Sinkronisasi state internal jika value dari parent berubah (agar reset benar2 sync)
+  React.useEffect(() => {
+    setType(value.filetype || "all");
+    setTime(value.time || "all");
+    setCustomDateRange(value.customDateRange || {});
+    setDomain(value.domain || "");
+    setSafeSearch(value.safeSearch || false);
+  }, [value.filetype, value.time, value.customDateRange, value.domain, value.safeSearch]);
+
+  // Helper untuk preview filter aktif
+  function getActiveFilterSummary(opts?: { excludeSafeSearch?: boolean }) {
+    const filters = [];
+    if (type && type !== "all") filters.push(type.toUpperCase());
+    if (time && time !== "all") filters.push(time === "custom" && customDateRange?.start && customDateRange?.end
+      ? `${customDateRange.start.toLocaleDateString()} - ${customDateRange.end.toLocaleDateString()}`
+      : time);
+    if (domain) filters.push(`domain: ${domain}`);
+    if (!opts?.excludeSafeSearch && safeSearch) filters.push("Safe Search: Aktif");
+    return filters.length ? filters.join(", ") : "Tidak ada filter aktif";
+  }
 
   // Setiap perubahan filter update ke parent, tapi tidak trigger search
   React.useEffect(() => {
@@ -63,91 +87,117 @@ export function SearchFilter({ value, onChange }: SearchFilterProps) {
   }, [type, time, customDateRange.start, customDateRange.end, domain, safeSearch]);
 
   return (
-    <div className="flex flex-wrap items-center gap-4 p-4 bg-background rounded-lg shadow-md max-w-7xl w-full">
-      {/* Domain Input */}
-      <div className="flex-1 min-w-[150px]">
-        <Input
-          placeholder="Domain khusus (opsional)"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-        />
-      </div>
-
-      {/* Type Select */}
-      <div className="flex-1 min-w-[120px]">
-        <Select value={type} onValueChange={setType}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Tipe" />
-          </SelectTrigger>
-          <SelectContent>
-            {typeOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Time Select */}
-      <div className="flex-1 min-w-[140px]">
-        <Select value={time} onValueChange={setTime}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Waktu (opsional)" />
-          </SelectTrigger>
-          <SelectContent>
-            {times.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Custom Date Range */}
-      {time === "custom" && (
-        <div className="flex-1 min-w-[200px]">
-          <Popover open={showDatePopover} onOpenChange={setShowDatePopover}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-start">
-                {customDateRange.start && customDateRange.end
-                  ? `${format(customDateRange.start, "dd/MM/yyyy")} - ${format(
-                      customDateRange.end,
-                      "dd/MM/yyyy"
-                    )}`
-                  : "Pilih rentang tanggal"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-auto p-0">
-              <Calendar
-                initialFocus
-                mode="range"
-                selected={{
-                  from: customDateRange.start,
-                  to: customDateRange.end,
-                }}
-                onSelect={(range) =>
-                  setCustomDateRange({ start: range?.from, end: range?.to })
-                }
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
+    <>
+      {/* Baris 1 : Form Filter */}
+      <div className="flex flex-wrap items-center gap-4 p-4 bg-background rounded-lg sm:rounded-full shadow-md w-full mb-2">
+        {/* Domain Input */}
+        <div className="flex-1 min-w-[150px]">
+          <Input
+            placeholder="Domain khusus (opsional)"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            className="rounded-full"
+          />
         </div>
-      )}
-
-      {/* Safe Search */}
-      <div className="flex items-center gap-2 min-w-[130px]">
-        <Checkbox
-          id="safe-search"
-          checked={safeSearch}
-          onCheckedChange={(v) => setSafeSearch(Boolean(v))}
-        />
-        <label htmlFor="safe-search" className="text-sm whitespace-nowrap">
-          Safe Search
-        </label>
+        {/* Type Select */}
+        <div className="flex-1 min-w-[120px]">
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger className="w-full rounded-full">
+              <SelectValue placeholder="Tipe" />
+            </SelectTrigger>
+            <SelectContent>
+              {typeOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Time Select */}
+        <div className="flex-1 min-w-[140px]">
+          <Select value={time} onValueChange={setTime}>
+            <SelectTrigger className="w-full rounded-full">
+              <SelectValue placeholder="Waktu (opsional)" />
+            </SelectTrigger>
+            <SelectContent>
+              {times.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {/* Custom Date Range */}
+        {time === "custom" && (
+          <div className="flex-1 min-w-[200px]">
+            <Popover open={showDatePopover} onOpenChange={setShowDatePopover}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start rounded-full">
+                  {customDateRange.start && customDateRange.end
+                    ? `${format(customDateRange.start, "dd/MM/yyyy")} - ${format(
+                        customDateRange.end,
+                        "dd/MM/yyyy"
+                      )}`
+                    : "Pilih rentang tanggal"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-0">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  selected={{
+                    from: customDateRange.start,
+                    to: customDateRange.end,
+                  }}
+                  onSelect={(range) =>
+                    setCustomDateRange({ start: range?.from, end: range?.to })
+                  }
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
       </div>
-    </div>
+      {/* Baris 2 : Semua Elemen Sejajar, Satu Baris, Full Width */}
+      <div className="flex flex-wrap items-center gap-4 w-full p-4 bg-background shadow-md rounded-lg sm:rounded-full">
+        <label className="flex-1 flex items-center gap-2 text-xs select-none cursor-pointer px-3 py-2 bg-muted border border-border rounded-full min-w-fit">
+          <Checkbox
+            id="safe-search"
+            checked={safeSearch}
+            onCheckedChange={v => setSafeSearch(v === true)}
+            className="accent-primary"
+          />
+          <span className="font-medium">Safe Search</span>
+        </label>
+        {typeof autoSearch === "boolean" && onAutoSearchChange && (
+          <label className="flex-1 flex items-center gap-2 text-xs select-none cursor-pointer px-3 py-2 bg-muted border border-border rounded-full min-w-fit">
+            <Checkbox
+              checked={autoSearch}
+              onCheckedChange={onAutoSearchChange}
+              className="accent-primary"
+            />
+            <span className="font-medium">Auto-search</span>
+          </label>
+        )}
+        <div className="flex-1 inline-block px-3 py-2 bg-accent text-xs font-semibold text-accent-foreground border border-border shadow-sm rounded-full min-w-fit">
+          Filter Aktif: {getActiveFilterSummary({ excludeSafeSearch: true })}
+        </div>
+        <div className={`flex-1 inline-block px-3 py-2 border text-xs font-semibold shadow-sm rounded-full min-w-fit ${safeSearch ? 'bg-green-100 text-green-700 border-green-300' : 'bg-muted text-foreground border-border'}`}> 
+          Safe Search: <span className="font-bold ml-1">{safeSearch ? 'ON' : 'OFF'}</span>
+        </div>
+        {onReset && (
+          <button
+            type="button"
+            className="flex-1 px-3 py-2 bg-muted text-foreground border border-border shadow-sm text-xs font-medium hover:bg-accent transition rounded-full min-w-fit"
+            onClick={onReset}
+          >
+            <span className="inline-block align-middle">Reset Filter</span>
+          </button>
+        )}
+      </div>
+    </>
   );
 }

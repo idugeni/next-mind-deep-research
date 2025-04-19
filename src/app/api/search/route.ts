@@ -8,9 +8,10 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get("q")
     const language = searchParams.get("language") as "id" | "en" | undefined
+    const safe = searchParams.get("safe") || "off";
 
     if (!query) {
-      return NextResponse.json({ message: "Search query is required" }, { status: 400 })
+      return NextResponse.json({ error: true, message: "Search query is required" }, { status: 200 })
     }
 
     // Apply rate limiting
@@ -20,13 +21,14 @@ export async function GET(request: NextRequest) {
     if (!success) {
       return NextResponse.json(
         {
+          error: true,
           message: "Rate limit exceeded. Please try again later.",
           limit,
           remaining,
           reset,
         },
         {
-          status: 429,
+          status: 200,
           headers: {
             "X-RateLimit-Limit": limit.toString(),
             "X-RateLimit-Remaining": remaining.toString(),
@@ -37,9 +39,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Perform the search
-    const searchResults = await searchGoogle(query, language)
+    const searchResults = await searchGoogle(query, language, safe)
 
     return NextResponse.json(searchResults, {
+      status: 200,
       headers: {
         "X-RateLimit-Limit": limit.toString(),
         "X-RateLimit-Remaining": remaining.toString(),
@@ -49,6 +52,6 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     // Error logged for server, send message to client
     const errorMessage = error instanceof Error ? error.message : "An error occurred during search"
-    return NextResponse.json({ message: errorMessage }, { status: 500 })
+    return NextResponse.json({ error: true, message: errorMessage }, { status: 200 })
   }
 }

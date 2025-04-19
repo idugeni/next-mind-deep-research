@@ -14,8 +14,8 @@ interface SearchResultsProps {
   onResultSelectAction: (result: SearchResult, isSelected: boolean) => void
   selectedResults: SearchResult[]
   onBatchSelect?: (results: SearchResult[], isSelected: boolean) => void
-  hasSearched?: boolean
-  searchError?: string | null
+  hasSearched: boolean
+  searchError: string | null
 }
 
 const typeIconMap = {
@@ -36,6 +36,7 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
   // Ubah batas maksimal pilihan menjadi 10
   const maxSelected = 10
   const [filter, setFilter] = useState<string>("all")
+  const [visibleCount, setVisibleCount] = useState(10);
 
   // Kategori unik hasil
   const categories = useMemo<string[]>(() => {
@@ -56,11 +57,26 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
   }, [results, filter])
 
   // Pagination state
-  const [visibleCount, setVisibleCount] = useState(10);
-  // Reset visibleCount ke 10 setiap hasil search/filter berubah
   useEffect(() => {
     setVisibleCount(10);
   }, [results, filter]);
+
+  // Show error or empty state if needed
+  if (searchError) {
+    return (
+      <div className="text-red-600 py-8 text-center">
+        {searchError}
+      </div>
+    );
+  }
+  if (hasSearched && results.length === 0) {
+    return (
+      <div className="text-gray-500 py-8 text-center">
+        Tidak ada hasil ditemukan.
+      </div>
+    );
+  }
+
   const totalToShow = Math.min(filteredResults.length, 50);
   const pagedResults = filteredResults.slice(0, visibleCount);
 
@@ -168,38 +184,6 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
   // Batasi pemilihan hasil search
   const canSelectMore = selectedResults.length < maxSelected
 
-  // Jika error quota exceeded, tampilkan fallback khusus
-  if (searchError === 'quota') {
-    return (
-      <div className="w-full flex flex-col items-center justify-center py-12 text-center text-destructive">
-        <div className="text-2xl font-semibold mb-2">Kuota harian Google Custom Search sudah habis</div>
-        <div className="text-sm">Silakan coba lagi besok atau hubungi admin untuk upgrade kuota.</div>
-      </div>
-    );
-  }
-  // Jika error lain, tampilkan error generic
-  if (searchError && searchError !== 'quota') {
-    return (
-      <div className="w-full flex flex-col items-center justify-center py-12 text-center text-destructive">
-        <div className="text-2xl font-semibold mb-2">Terjadi kesalahan saat pencarian</div>
-        <div className="text-sm">{searchError}</div>
-      </div>
-    );
-  }
-  // Jangan render filter & hasil jika belum ada hasil search
-  if (hasSearched && (!results || results.length === 0)) {
-    return (
-      <div className="w-full flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-        <div className="text-2xl font-semibold mb-2">Tidak ada hasil ditemukan</div>
-        <div className="text-sm">Coba perbaiki kata kunci, filter, atau gunakan rentang waktu yang berbeda.</div>
-      </div>
-    );
-  }
-  // Jika belum pernah search, jangan tampilkan pesan apapun
-  if (!hasSearched && (!results || results.length === 0)) {
-    return null;
-  }
-
   return (
     <div className="space-y-4">
       {/* Filter dan aksi */}
@@ -250,22 +234,6 @@ export default function SearchResults({ results, onResultSelectAction, selectedR
           </div>
         </div>
       )}
-      {/* Tambahkan animasi fade-in-up untuk tombol */}
-      <style jsx global>{`
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.5s cubic-bezier(0.4,0,0.2,1);
-        }
-      `}</style>
     </div>
   )
 }

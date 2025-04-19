@@ -1,17 +1,69 @@
-import { defineConfig } from "eslint/config";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+import pluginReact from "eslint-plugin-react";
+import next from "@next/eslint-plugin-next";
+import { defineConfig } from "eslint/config";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
-});
+export default defineConfig([
+  // Base JS/TS config
+  {
+    files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: { jsx: true },
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+    plugins: {
+      js,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+    },
+  },
 
-export default defineConfig([{
-    extends: compat.extends("next/core-web-vitals", "next/typescript"),
-}]);
+  // TypeScript support
+  {
+    files: ["**/*.{ts,tsx}"],
+    ...tseslint.configs.recommendedTypeChecked,
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
+    },
+  },
+
+  // React support
+  {
+    files: ["**/*.{jsx,tsx}"],
+    plugins: {
+      react: pluginReact,
+    },
+    rules: {
+      ...pluginReact.configs.recommended.rules,
+      "react/react-in-jsx-scope": "off", // Next.js doesn't require React in scope
+    },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
+  },
+
+  // Next.js support
+  {
+    files: ["**/*.{js,ts,jsx,tsx}"],
+    plugins: {
+      "@next/next": next,
+    },
+    rules: {
+      ...next.configs.recommended.rules,
+    },
+  },
+]);

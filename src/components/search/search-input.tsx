@@ -26,7 +26,7 @@ export default function SearchInput({ onSearch, isLoading = false, showReset = f
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="flex flex-col sm:flex-row w-full max-w-7xl mx-auto items-center space-y-2 sm:space-y-0 sm:space-x-2">
+      <div className="flex flex-wrap items-center gap-4 p-4 bg-background rounded-lg sm:rounded-full shadow-md max-w-7xl w-full">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -34,11 +34,11 @@ export default function SearchInput({ onSearch, isLoading = false, showReset = f
             placeholder="Enter your research topic..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-8"
+            className="pl-8 rounded-full"
             disabled={isLoading}
           />
         </div>
-        <Button type="submit" size="sm" disabled={!query.trim() || isLoading} className="w-full sm:w-auto">
+        <Button type="submit" size="sm" disabled={!query.trim() || isLoading} className="w-full rounded-full sm:w-auto">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

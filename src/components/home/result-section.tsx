@@ -14,6 +14,9 @@ interface ResultSectionProps {
   selectedModel: string
   onModelChangeAction: (model: string) => void
   onResultSelectAction: (result: SearchResult, isSelected: boolean) => void
+  searchQuery?: string
+  hasSearched: boolean
+  searchError: string | null
 }
 
 export default function ResultSection({
@@ -24,7 +27,13 @@ export default function ResultSection({
   selectedModel,
   onModelChangeAction,
   onResultSelectAction,
+  searchQuery,
+  hasSearched,
+  searchError
 }: ResultSectionProps) {
+  // Jangan render apapun jika hasil kosong atau query kosong
+  if (!searchResults || searchResults.length === 0 || !searchQuery || searchQuery.trim() === "") return null;
+
   return (
     <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
@@ -47,11 +56,12 @@ export default function ResultSection({
           </Button>
         </div>
       </div>
-
       <SearchResults
         results={searchResults}
         onResultSelectAction={onResultSelectAction}
         selectedResults={selectedResults}
+        hasSearched={hasSearched}
+        searchError={searchError}
       />
     </>
   )

@@ -1,6 +1,6 @@
 import type { SearchResult } from '@/types/search';
 
-export async function searchGoogle(query: string, language?: "id" | "en") {
+export async function searchGoogle(query: string, language?: "id" | "en", safe: string = "off") {
   const apiKey = process.env.GOOGLE_SEARCH_API_KEY
   const cx = process.env.GOOGLE_SEARCH_CX
 
@@ -20,7 +20,7 @@ export async function searchGoogle(query: string, language?: "id" | "en") {
   const urls = [];
   for (let i = 0; i < 5; i++) {
     const start = 1 + i * 10;
-    urls.push(`https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}&num=10&start=${start}${params}`);
+    urls.push(`https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}&num=10&start=${start}${params}&safe=${safe}`);
   }
 
   try {
